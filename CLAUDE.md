@@ -109,10 +109,26 @@ From the brief in `prd-00-index.md`; do not re-litigate these without being aske
   sequence (`git pull` → build SSR → `migrate --force` → caches → restart SSR, `FR8-13`)
   proactively. Infrastructure — VPS, CloudPanel, DNS, SSL — is the school's responsibility.
 
+## Claude Code automation in this repo
+
+- **`.mcp.json`** registers Laravel Boost (`php artisan boost:mcp`) — schema introspection,
+  `tinker`, and version-accurate Laravel/Inertia doc search against the running app.
+- **Hooks** (`.claude/hooks/`, wired in `.claude/settings.json`):
+  - `guard-write.php` blocks writes to generated/secret files — the Wayfinder output dirs, `.env`,
+    lock files, `public/build/`, `bootstrap/ssr/`.
+  - `guard-deploy.php` blocks the `FR8-13` release sequence and destructive migrations.
+  - `format.php` runs Pint or Prettier + ESLint on each edited file, since `ci:check` gates on them.
+- **Skills**: `/story <ID>` works a PRD requirement end to end against its acceptance checkboxes;
+  `/inertia-page` scaffolds route + controller + page + test with the component name threaded
+  through all four.
+- **Agents**: `authz-reviewer` (server-side role enforcement, `FR5-2`), `design-audit` (`prd-03 §7`).
+
 ## Known gaps in the current scaffold
 
-- `composer.json` `post-update-cmd` calls `php artisan boost:update`, but `laravel/boost` is not
-  installed — the hook will fail on `composer update`. Either install it or drop the line.
 - `npm run build:ssr` is wired but there is no `resources/js/ssr.tsx` entrypoint, and SSR is a hard
   requirement (`prd-06`). It has to be created before public pages ship.
 - `.npmrc` sets `ignore-scripts=true`; packages needing postinstall steps won't run them.
+- The three `playwright-test-*` agents in `.claude/agents/` call an `mcp__playwright-test__*` server
+  that is not configured anywhere, so they fail on first use. There is no Playwright suite either.
+  Pest 4 browser testing is the stack-native path; several `prd-06` stories end with "Verify in
+  browser using dev-browser skill" and need something wired up.
