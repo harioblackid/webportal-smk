@@ -1,3 +1,4 @@
+import type { Flash } from '@/types/admin';
 import type { Auth } from '@/types/auth';
 import type { Site } from '@/types/site';
 
@@ -14,6 +15,7 @@ declare module '@inertiajs/core' {
             name: string;
             site: Site;
             auth: Auth;
+            flash: Flash;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

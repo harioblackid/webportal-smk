@@ -11,6 +11,8 @@ type PaginationLink = {
 type PaginationProps = {
     links: PaginationLink[];
     lastPage: number;
+    /** Overridden where the list is not berita — the admin media grid, say. */
+    label?: string;
 };
 
 /** Laravel ships the previous/next labels with HTML entities in them. */
@@ -21,13 +23,17 @@ const readable = (label: string) =>
  * FR4-6 — page state lives in the URL, so these are real links a visitor can
  * bookmark or share, not buttons that mutate client state.
  */
-export default function Pagination({ links, lastPage }: PaginationProps) {
+export default function Pagination({
+    links,
+    lastPage,
+    label = 'Paginasi berita',
+}: PaginationProps) {
     if (lastPage <= 1) {
         return null;
     }
 
     return (
-        <nav aria-label="Paginasi berita" className="mt-10">
+        <nav aria-label={label} className="mt-10">
             <ul className="flex flex-wrap items-center justify-center gap-1.5">
                 {links.map((link) => (
                     <li key={link.label}>

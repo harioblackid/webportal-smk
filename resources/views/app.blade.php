@@ -11,6 +11,18 @@
         <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+        {{-- FR5-18 / US-015: GA4 loads only when a Superadmin has entered a
+             Measurement ID, and App\Support\Analytics keeps it off /admin. --}}
+        @if ($ga4 = App\Support\Analytics::measurementId())
+            <script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga4 }}"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', @json($ga4));
+            </script>
+        @endif
+
         @fonts
 
         @viteReactRefresh

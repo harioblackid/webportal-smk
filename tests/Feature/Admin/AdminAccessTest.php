@@ -12,7 +12,26 @@ test('guests are redirected to login from every admin route', function (string $
     get($route)->assertRedirect(route('login'));
 })->with([
     'dashboard' => fn () => route('admin.dashboard'),
+    'posts' => fn () => route('admin.posts.index'),
+    'categories' => fn () => route('admin.categories.index'),
+    'heroes' => fn () => route('admin.heroes.index'),
+    'media' => fn () => route('admin.media.index'),
+    'majors' => fn () => route('admin.majors.index'),
+    'settings' => fn () => route('admin.settings.edit'),
     'users' => fn () => route('admin.users.index'),
+]);
+
+test('an editor reaches every shared module', function (string $name) {
+    // prd-05 §2: berita, kategori, hero, and media are open to both roles.
+    actingAs(User::factory()->create())
+        ->get(route($name))
+        ->assertOk();
+})->with([
+    'admin.posts.index',
+    'admin.posts.create',
+    'admin.categories.index',
+    'admin.heroes.index',
+    'admin.media.index',
 ]);
 
 test('a signed-in editor reaches the dashboard', function () {
@@ -24,11 +43,17 @@ test('a signed-in editor reaches the dashboard', function () {
 
 // US-010 — "Editor mengakses rute khusus Superadmin mendapat 403" (FR5-2).
 
-test('an editor hitting a superadmin route gets 403, not a redirect', function () {
+test('an editor hitting a superadmin route gets 403, not a redirect', function (string $name) {
     actingAs(User::factory()->create())
-        ->get(route('admin.users.index'))
+        ->get(route($name))
         ->assertForbidden();
-});
+})->with([
+    'admin.majors.index',
+    'admin.majors.create',
+    'admin.settings.edit',
+    'admin.users.index',
+    'admin.users.create',
+]);
 
 test('a superadmin reaches the superadmin route', function () {
     actingAs(User::factory()->superadmin()->create())
@@ -43,7 +68,16 @@ test('every admin response carries the noindex header', function (string $name) 
     actingAs(User::factory()->superadmin()->create())
         ->get(route($name))
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
-})->with(['admin.dashboard', 'admin.users.index']);
+})->with([
+    'admin.dashboard',
+    'admin.posts.index',
+    'admin.categories.index',
+    'admin.heroes.index',
+    'admin.media.index',
+    'admin.majors.index',
+    'admin.settings.edit',
+    'admin.users.index',
+]);
 
 test('the noindex header survives the guest redirect too', function () {
     // A redirect has no HTML body, so a <meta> tag could not cover this case.

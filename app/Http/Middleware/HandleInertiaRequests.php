@@ -45,6 +45,12 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // prd-05 §5: every admin write redirects, and the toast that
+            // confirms it rides along here rather than in each page's props.
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
         ];
     }
 }
