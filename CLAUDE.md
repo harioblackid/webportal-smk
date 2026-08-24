@@ -69,7 +69,10 @@ requires editing both, or it is untyped on the React side.
 ### Other
 - Exceptions render as JSON only for `api/*` or `expectsJson()` (`bootstrap/app.php`).
 - `@/*` aliases `resources/js/*` (tsconfig paths + eslint import resolver).
-- Dev DB is SQLite; production targets MySQL 8 per `prd-02` — avoid SQLite-only migration idioms.
+- **MariaDB everywhere — SQLite is not used in this project.** Dev runs on the local MariaDB
+  (`laravel_portal`), tests on `laravel_portal_test`, CI on a `mariadb:11` service container,
+  production on MySQL 8/MariaDB per `prd-02`. The `sqlite` connection has been removed from
+  `config/database.php`; do not reintroduce it or write SQLite-only migration idioms.
 
 ## Conventions enforced by CI
 
@@ -87,9 +90,11 @@ failures break the build the same as test failures.
 
 ## Testing
 
-Pest 4. `tests/Pest.php` binds `Tests\TestCase` to `Feature` only — `RefreshDatabase` is present
-but **commented out**; uncomment it there once migrations matter. `phpunit.xml` forces SQLite
-`:memory:`, array cache/session, and sync queue.
+Pest 4. `tests/Pest.php` binds `Tests\TestCase` to `Feature` and applies `RefreshDatabase`, so
+every feature test migrates a real schema. `phpunit.xml` points the suite at the MariaDB database
+`laravel_portal_test` (create it once locally) and forces `id` locale, array cache/session, and
+sync queue. The test database is migrated and rolled back per test — never point it at
+`laravel_portal`.
 
 ## Locked product decisions
 

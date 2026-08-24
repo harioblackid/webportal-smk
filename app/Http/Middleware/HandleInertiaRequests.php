@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SiteSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,6 +39,9 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // prd-04 §5: Navbar, Footer, and PpdbBanner appear on every public
+            // page, so their data is shared rather than repeated per controller.
+            'site' => SiteSettings::share(),
             'auth' => [
                 'user' => $request->user(),
             ],

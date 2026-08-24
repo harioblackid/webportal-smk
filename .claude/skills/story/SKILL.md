@@ -50,7 +50,7 @@ specifically:
   (`prd-02`).
 - Design system is locked in `prd-03`: no purple/violet/indigo/fuchsia, no
   Inter/Roboto/Arial/Helvetica/system-ui, no emoji as icons.
-- Dev DB is SQLite, production is MySQL 8 — avoid SQLite-only migration idioms.
+- MariaDB everywhere (dev, tests, CI); production is MySQL 8. SQLite is not used.
 
 ## 4. Verify every checkbox
 
@@ -59,7 +59,8 @@ proves it. A checkbox is satisfied by a passing test, a route returning the righ
 status, or an observed page — never by "the code looks right".
 
 - Write Pest feature tests for behaviour the checkboxes describe. `RefreshDatabase`
-  is commented out in `tests/Pest.php` — uncomment it once migrations matter.
+  is active in `tests/Pest.php`, and the suite runs against the MariaDB database
+  `laravel_portal_test`.
 - Several stories end with "Verify in browser using dev-browser skill". That means
   actually loading the page, not asserting on markup.
 - If the story touches UI, run the `prd-03 §7` self-audit before calling it done

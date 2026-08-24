@@ -1,7 +1,10 @@
+export type UserRole = 'superadmin' | 'editor';
+
 export type User = {
     id: number;
     name: string;
     email: string;
+    role: UserRole;
     avatar?: string;
     email_verified_at: string | null;
     created_at: string;
@@ -10,5 +13,6 @@ export type User = {
 };
 
 export type Auth = {
-    user: User;
+    /** null for guests — every public page shares this prop. */
+    user: User | null;
 };
