@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Http\Resources\ImageResource;
 use App\Models\Media;
 use App\Models\Setting;
+use Inertia\Inertia;
 
 /**
  * Reads the FR7-7 settings keys into the shape the public pages consume.
@@ -26,11 +27,18 @@ class SiteSettings
         $phone = self::clean($values->get('contact_phone'));
         $whatsapp = self::clean($values->get('contact_whatsapp'));
         $ppdbUrl = self::clean($values->get('ppdb_url'));
+        $base = self::baseUrl();
 
-        return [
+        $site = [
             'name' => self::clean($values->get('school_name')) ?? config('app.name'),
             'tagline' => self::clean($values->get('tagline')),
-            'url' => rtrim((string) config('app.url'), '/'),
+            'url' => $base,
+            // D-4: derived from the school crest and served from public/ at a
+            // stable path, so PHP can name it in JSON-LD and og:image while
+            // React points at the same file.
+            'logo' => self::mediaUrl($values->get('logo_media_id')) ?? $base.'/logo-smk.png',
+            // FR6-19: what a share falls back to when a page has no image.
+            'ogImage' => $base.'/og-default.png',
             'contact' => [
                 'address' => self::clean($values->get('contact_address')),
                 'phone' => $phone,
@@ -52,6 +60,44 @@ class SiteSettings
                 ),
             ],
         ];
+
+        // FR6-11: built here so the JSON-LD and the visible contact block can
+        // never drift apart — both read the same array.
+        $site['organization'] = StructuredData::organization($site);
+
+        return $site;
+    }
+
+    /**
+     * The array HandleInertiaRequests already shared this request.
+     *
+     * Lets a controller reuse the identity block without a second round of
+     * queries, and guarantees JSON-LD and the visible page cannot disagree.
+     *
+     * @return array<string, mixed>
+     */
+    public static function shared(): array
+    {
+        $site = Inertia::getShared('site');
+
+        return is_array($site) ? $site : self::share();
+    }
+
+    /**
+     * FR6-4 — the canonical host, never the host the request arrived on.
+     *
+     * A crawler that reaches an alias must still be handed one set of URLs,
+     * so every absolute URL on the page is built from this.
+     */
+    public static function baseUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/');
+    }
+
+    /** The uploaded logo wins over the bundled one once the CMS has one. */
+    private static function mediaUrl(mixed $mediaId): ?string
+    {
+        return Media::query()->whereKey($mediaId)->first()?->url();
     }
 
     /**

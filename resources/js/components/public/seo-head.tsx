@@ -20,7 +20,8 @@ export default function SeoHead({ seo }: SeoHeadProps) {
     // FR6-4: absolute, and built from APP_URL rather than the request host, so
     // a request arriving on the wrong hostname still points at the canonical.
     const canonical = `${site.url}${url}`;
-    const image = seo.image?.url ?? null;
+    // FR6-19: a page with no image of its own still shares as the school crest.
+    const image = seo.image?.url ?? site.ogImage;
     const description = seo.description;
     const title = `${seo.title} - ${site.name}`;
 
@@ -34,10 +35,9 @@ export default function SeoHead({ seo }: SeoHeadProps) {
             <meta property="og:title" content={title} />
             <meta property="og:locale" content="id_ID" />
             <meta name="twitter:title" content={title} />
-            <meta
-                name="twitter:card"
-                content={image === null ? 'summary' : 'summary_large_image'}
-            />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta property="og:image" content={image} />
+            <meta name="twitter:image" content={image} />
 
             {description !== null && (
                 <meta name="description" content={description} />
@@ -49,11 +49,10 @@ export default function SeoHead({ seo }: SeoHeadProps) {
                 <meta name="twitter:description" content={description} />
             )}
 
-            {image !== null && <meta property="og:image" content={image} />}
-            {image !== null && <meta name="twitter:image" content={image} />}
-            {seo.image !== null && (
-                <meta property="og:image:alt" content={seo.image.alt} />
-            )}
+            <meta
+                property="og:image:alt"
+                content={seo.image?.alt ?? `Logo ${site.name}`}
+            />
         </Head>
     );
 }

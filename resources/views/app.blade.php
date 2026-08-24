@@ -5,8 +5,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        {{-- D-4 / US-003: all three derive from prd/logo_smk_new.png. The
+             Laravel starter's SVG icon is deleted on purpose — a browser
+             prefers an SVG icon over the .ico when both are offered. --}}
+        <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         @fonts

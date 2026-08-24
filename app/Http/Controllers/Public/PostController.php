@@ -8,6 +8,8 @@ use App\Http\Resources\PostResource;
 use App\Models\Category;
 use App\Models\Post;
 use App\Support\Seo;
+use App\Support\SiteSettings;
+use App\Support\StructuredData;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -39,11 +41,21 @@ class PostController extends Controller
         // it, so a draft is indistinguishable from a URL that never existed.
         $post = Post::query()
             ->published()
-            ->with(['category', 'featuredMedia'])
+            ->with(['category', 'featuredMedia', 'author'])
             ->where('slug', $slug)
             ->firstOrFail();
 
+        $site = SiteSettings::shared();
+
         return Inertia::render('public/berita/show', [
+            // FR6-12. Read back off the shared prop rather than re-reading the
+            // settings, so the article node and the visible page agree by
+            // construction and cost no extra query.
+            'jsonLd' => StructuredData::article(
+                $post,
+                $site,
+                $site['url'].route('posts.show', $post->slug, absolute: false),
+            ),
             'post' => (new PostResource($post))->toArray(request()),
             'related' => NewsCardResource::many($this->related($post)),
             'seo' => Seo::page(

@@ -23,7 +23,16 @@ export default function Footer() {
         <footer className="mt-16 bg-onyx text-white/80">
             <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-6 md:grid-cols-3 lg:py-14">
                 <div>
-                    <p className="font-display text-xl font-semibold text-white">
+                    <img
+                        src="/logo-smk.png"
+                        alt=""
+                        width={56}
+                        height={56}
+                        loading="lazy"
+                        className="size-14 object-contain"
+                    />
+
+                    <p className="mt-4 font-display text-xl font-semibold text-white">
                         {site.name}
                     </p>
 

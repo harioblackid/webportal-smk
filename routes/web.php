@@ -4,6 +4,7 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MajorController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
+use App\Http\Controllers\Public\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,11 @@ Route::get('berita/{slug}', [PostController::class, 'show'])->name('posts.show')
 
 Route::get('jurusan', [MajorController::class, 'index'])->name('majors.index');
 Route::get('jurusan/{slug}', [MajorController::class, 'show'])->name('majors.show');
+
+// FR6-9 / FR6-10. public/robots.txt was deleted so these two stay the single
+// source of truth for what crawlers are told.
+Route::get('sitemap.xml', [SitemapController::class, 'sitemap'])->name('sitemap');
+Route::get('robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // A fallback route, unlike the exception handler, still runs the web group —
 // so the 404 page gets the shared props its layout needs.

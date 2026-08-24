@@ -20,6 +20,12 @@ export type Site = {
     tagline: string | null;
     /** Absolute base for canonical and og:url (FR6-4). */
     url: string;
+    /** Absolute URL of the school crest (D-4). */
+    logo: string;
+    /** Absolute URL of the default share image (FR6-19). */
+    ogImage: string;
+    /** schema.org EducationalOrganization node (FR6-11). */
+    organization: Record<string, unknown>;
     contact: {
         address: string | null;
         phone: string | null;

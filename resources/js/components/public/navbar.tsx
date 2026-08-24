@@ -49,9 +49,14 @@ export default function Navbar() {
                     href={home()}
                     className="group flex min-h-11 items-center gap-3"
                 >
-                    <span
-                        className="h-9 w-1.5 rounded-full bg-brand transition-colors group-hover:bg-brand-accent"
-                        aria-hidden="true"
+                    {/* alt is empty on purpose: the school name sits right
+                        beside it, so a label here would be read twice. */}
+                    <img
+                        src="/logo-smk.png"
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="size-10 shrink-0 object-contain"
                     />
                     <span className="leading-tight">
                         <span className="block font-display text-base font-semibold text-onyx sm:text-lg">

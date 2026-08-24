@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 
+import JsonLd from '@/components/public/json-ld';
 import NewsCard from '@/components/public/news-card';
 import SiteImage from '@/components/public/site-image';
 import PublicLayout from '@/layouts/public-layout';
@@ -10,12 +11,21 @@ import type { NewsCard as NewsCardData, PostDetail, Seo } from '@/types';
 type BeritaShowProps = {
     post: PostDetail;
     related: NewsCardData[];
+    /** schema.org NewsArticle built server-side (FR6-12). */
+    jsonLd: Record<string, unknown>;
     seo: Seo;
 };
 
-export default function BeritaShow({ post, related, seo }: BeritaShowProps) {
+export default function BeritaShow({
+    post,
+    related,
+    jsonLd,
+    seo,
+}: BeritaShowProps) {
     return (
         <PublicLayout seo={seo}>
+            <JsonLd data={jsonLd} />
+
             <article>
                 {/* prd-03 section 4: narrow measure for the text, wide lead image. */}
                 <header className="mx-auto max-w-3xl px-5 pt-10 sm:px-6 lg:pt-14">
