@@ -187,3 +187,71 @@ test('absolute urls stay on the canonical host even off an alias', function () {
     $this->get('http://alias.example.test/robots.txt')
         ->assertSee('Sitemap: http://localhost/sitemap.xml', false);
 });
+
+// US-017 — metadata unik per halaman (FR6-3).
+
+test('every public page carries its own title and description', function () {
+    // A duplicated title across pages is the failure this guards against —
+    // Search Console reports it as "duplicate meta", and it is easy to
+    // reintroduce by copying a controller.
+    $post = Post::factory()->published()->create([
+        'title' => 'Kunjungan Industri ke Karawang',
+        'slug' => 'kunjungan-industri',
+        'excerpt' => 'Siswa kelas XI menengok lini produksi.',
+    ]);
+    $major = Major::factory()->create([
+        'name' => 'Teknik Kendaraan Ringan',
+        'slug' => 'tkr',
+        'excerpt' => 'Perawatan dan perbaikan kendaraan.',
+    ]);
+
+    $routes = [
+        route('home'),
+        route('profil'),
+        route('kontak'),
+        route('posts.index'),
+        route('posts.show', $post->slug),
+        route('majors.index'),
+        route('majors.show', $major->slug),
+    ];
+
+    $titles = [];
+
+    foreach ($routes as $url) {
+        $this->get($url)
+            ->assertOk()
+            ->assertInertia(function (AssertableInertia $page) use (&$titles) {
+                $seo = $page->toArray()['props']['seo'];
+
+                expect($seo['title'])->toBeString()->not->toBeEmpty()
+                    ->and($seo['description'])->toBeString()->not->toBeEmpty()
+                    // FR6-3: search results cut off around 160 characters.
+                    ->and(strlen((string) $seo['description']))->toBeLessThanOrEqual(163);
+
+                $titles[] = $seo['title'];
+            });
+    }
+
+    expect($titles)->toHaveCount(count($routes))
+        ->and(array_unique($titles))->toHaveCount(count($routes));
+});
+
+test('the detail page hands the seo block the post title, excerpt, and image', function () {
+    // FR6-3 & FR6-5 — <SeoHead> renders exactly what the server put here.
+    $media = Media::factory()->create();
+    $post = Post::factory()->published()->create([
+        'title' => 'Wisuda Angkatan 2026',
+        'slug' => 'wisuda-2026',
+        'excerpt' => 'Tiga ratus siswa dilepas hari ini.',
+        'featured_media_id' => $media->id,
+    ]);
+
+    $this->get(route('posts.show', $post->slug))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('seo.title', 'Wisuda Angkatan 2026')
+            ->where('seo.description', 'Tiga ratus siswa dilepas hari ini.')
+            // og:type article, not website — a share card for a story.
+            ->where('seo.type', 'article')
+            ->where('seo.image.url', $media->url())
+        );
+});

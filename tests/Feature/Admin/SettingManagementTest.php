@@ -24,6 +24,7 @@ function settingPayload(array $overrides = []): array
         'ppdb_url' => '',
         'ppdb_banner_media_id' => null,
         'ga4_measurement_id' => '',
+        'search_console_verification' => '',
     ], $overrides);
 }
 
@@ -128,4 +129,57 @@ test('the settings form is prefilled from the stored values', function () {
             ->component('admin/settings/edit')
             ->where('settings.school_name', 'SMK PGRI Telagasari')
             ->has('mediaLibrary'));
+});
+
+// US-020 / FR6-18 — verifikasi Search Console lewat meta tag.
+
+test('the verification tag is rendered on public pages once the token is set', function () {
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload([
+            'search_console_verification' => 'aBc123_tokenVerifikasiGoogle-01',
+        ]));
+
+    get(route('home'))
+        ->assertOk()
+        ->assertSee(
+            '<meta name="google-site-verification" content="aBc123_tokenVerifikasiGoogle-01">',
+            false
+        );
+});
+
+test('a whole meta tag pasted from google is reduced to its token', function () {
+    // The Copy button on the Search Console screen copies the entire tag.
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload([
+            'search_console_verification' => '<meta name="google-site-verification" content="aBc123_tokenVerifikasiGoogle-01" />',
+        ]))
+        ->assertSessionHasNoErrors();
+
+    expect(Setting::get('search_console_verification'))
+        ->toBe('aBc123_tokenVerifikasiGoogle-01');
+});
+
+test('a paste that is neither a token nor a meta tag is rejected', function () {
+    // Rejected rather than silently dropped: markup here would land in the
+    // head of every page on the site.
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload([
+            'search_console_verification' => '"><script>alert(1)</script>',
+        ]))
+        ->assertSessionHasErrors('search_console_verification');
+
+    expect(Setting::get('search_console_verification'))->toBeNull();
+});
+
+test('no verification tag is emitted when the field is empty', function () {
+    get(route('home'))->assertDontSee('google-site-verification', false);
+});
+
+test('clearing the field removes the tag again', function () {
+    Setting::put('search_console_verification', 'aBc123_tokenVerifikasiGoogle-01');
+
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload());
+
+    get(route('home'))->assertDontSee('google-site-verification', false);
 });

@@ -38,6 +38,7 @@ class SettingController extends Controller
         'ppdb_url',
         'ppdb_banner_media_id',
         'ga4_measurement_id',
+        'search_console_verification',
     ];
 
     public function edit(): Response
@@ -58,6 +59,7 @@ class SettingController extends Controller
                 'ppdb_url' => $values->get('ppdb_url') ?? '',
                 'ppdb_banner_media_id' => self::intOrNull($values->get('ppdb_banner_media_id')),
                 'ga4_measurement_id' => $values->get('ga4_measurement_id') ?? '',
+                'search_console_verification' => $values->get('search_console_verification') ?? '',
             ],
             'mediaLibrary' => MediaLibrary::options(),
         ]);

@@ -11,6 +11,13 @@
         <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+        {{-- FR6-18 / US-020: the Search Console ownership tag. Site-wide, not
+             just Home, so the property stays verified whichever URL Google
+             re-checks. --}}
+        @if ($verification = App\Support\SearchConsole::token())
+            <meta name="google-site-verification" content="{{ $verification }}">
+        @endif
+
         {{-- FR5-18 / US-015: GA4 loads only when a Superadmin has entered a
              Measurement ID, and App\Support\Analytics keeps it off /admin. --}}
         @if ($ga4 = App\Support\Analytics::measurementId())

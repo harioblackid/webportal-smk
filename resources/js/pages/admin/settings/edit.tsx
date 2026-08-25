@@ -23,6 +23,7 @@ type SettingValues = {
     ppdb_url: string;
     ppdb_banner_media_id: number | null;
     ga4_measurement_id: string;
+    search_console_verification: string;
 };
 
 type SettingsEditProps = {
@@ -30,7 +31,10 @@ type SettingsEditProps = {
     mediaLibrary: MediaItem[];
 };
 
-/** US-015 — identitas, kontak, banner PPDB, dan GA4 (Superadmin). */
+/**
+ * US-015 / US-020 — identitas, kontak, banner PPDB, GA4, dan verifikasi
+ * Search Console (Superadmin).
+ */
 export default function SettingsEdit({
     settings,
     mediaLibrary,
@@ -261,7 +265,7 @@ export default function SettingsEdit({
 
                 <fieldset className="space-y-5 rounded-xl border border-charcoal/15 p-5">
                     <legend className="px-1 font-display text-lg font-semibold text-onyx">
-                        Google Analytics 4
+                        Google Analytics &amp; Search Console
                     </legend>
 
                     <Field
@@ -284,6 +288,35 @@ export default function SettingsEdit({
                         <p className="text-sm text-charcoal">
                             Kode pelacakan dimuat di halaman publik saja —
                             aktivitas di /admin tidak ikut terhitung.
+                        </p>
+                    </Field>
+
+                    <Field
+                        id="search_console_verification"
+                        label="Kode verifikasi Search Console"
+                        error={form.errors.search_console_verification}
+                    >
+                        <Input
+                            id="search_console_verification"
+                            placeholder="Tempel kode atau tag <meta> dari Google"
+                            invalid={Boolean(
+                                form.errors.search_console_verification,
+                            )}
+                            value={form.data.search_console_verification}
+                            onChange={(event) =>
+                                form.setData(
+                                    'search_console_verification',
+                                    event.target.value,
+                                )
+                            }
+                        />
+                        <p className="text-sm text-charcoal">
+                            Boleh menempel seluruh tag{' '}
+                            <code>
+                                &lt;meta name="google-site-verification"…&gt;
+                            </code>{' '}
+                            — kodenya diambil otomatis, lalu dipasang di seluruh
+                            halaman agar Google dapat memverifikasi kepemilikan.
                         </p>
                     </Field>
                 </fieldset>

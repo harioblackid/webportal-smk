@@ -2,17 +2,34 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\SearchConsole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * FR5-18 — identitas, kontak, banner PPDB, dan GA4.
+ * FR5-18 — identitas, kontak, banner PPDB, GA4, dan Search Console.
  *
  * The keys here are the same ones App\Support\SiteSettings reads, so the form
  * and the public site cannot drift apart.
  */
 class SettingRequest extends FormRequest
 {
+    /**
+     * The Search Console screen copies the whole `<meta …>` tag, so the token
+     * is pulled out of it before the rules run — an admin who pastes what
+     * Google gave them should not have to edit it down by hand.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('search_console_verification')) {
+            $this->merge([
+                'search_console_verification' => SearchConsole::extract(
+                    $this->string('search_console_verification')->toString()
+                ),
+            ]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -33,6 +50,9 @@ class SettingRequest extends FormRequest
             'ppdb_url' => ['nullable', 'required_if:ppdb_enabled,true', 'url', 'max:255'],
             'ppdb_banner_media_id' => ['nullable', 'integer', Rule::exists('media', 'id')],
             'ga4_measurement_id' => ['nullable', 'string', 'regex:/^G-[A-Z0-9]{4,20}$/'],
+            // prepareForValidation() has already reduced a pasted meta tag to
+            // its token, so anything still malformed arrived as garbage.
+            'search_console_verification' => ['nullable', 'string', 'regex:/^[A-Za-z0-9_-]{20,128}$/'],
         ];
     }
 
@@ -53,6 +73,7 @@ class SettingRequest extends FormRequest
             'ppdb_url' => 'URL PPDB',
             'ppdb_banner_media_id' => 'gambar banner PPDB',
             'ga4_measurement_id' => 'Measurement ID GA4',
+            'search_console_verification' => 'kode verifikasi Search Console',
         ];
     }
 
@@ -63,6 +84,7 @@ class SettingRequest extends FormRequest
     {
         return [
             'ga4_measurement_id.regex' => 'Measurement ID GA4 berbentuk G-XXXXXXXXXX.',
+            'search_console_verification.regex' => 'Tempel kode atau tag <meta> verifikasi dari Google Search Console.',
         ];
     }
 }
