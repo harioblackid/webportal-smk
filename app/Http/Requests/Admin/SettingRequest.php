@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Support\SearchConsole;
+use App\Support\SiteSettings;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -39,6 +40,9 @@ class SettingRequest extends FormRequest
             'tagline' => ['nullable', 'string', 'max:200'],
             'logo_media_id' => ['nullable', 'integer', Rule::exists('media', 'id')],
             'contact_whatsapp' => ['nullable', 'string', 'max:40'],
+            'maps_mode' => ['required', 'string', Rule::in(SiteSettings::MAPS_MODES)],
+            // Still optional: the Kontak page treats "no map yet" as a normal
+            // state, and in coordinates mode this field is not used at all.
             'maps_embed' => ['nullable', 'string', 'max:2000'],
             'ppdb_enabled' => ['boolean'],
             // FR4-14 only shows the banner when it has somewhere to go, so a
@@ -61,6 +65,7 @@ class SettingRequest extends FormRequest
             'tagline' => 'tagline',
             'logo_media_id' => 'logo',
             'contact_whatsapp' => 'WhatsApp',
+            'maps_mode' => 'mode peta',
             'maps_embed' => 'peta',
             'ppdb_url' => 'URL PPDB',
             'ppdb_banner_media_id' => 'gambar banner PPDB',

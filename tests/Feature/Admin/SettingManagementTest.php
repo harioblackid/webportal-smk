@@ -15,6 +15,7 @@ function settingPayload(array $overrides = []): array
         'tagline' => 'Terampil, Mandiri, Berakhlak',
         'logo_media_id' => null,
         'contact_whatsapp' => '081234567890',
+        'maps_mode' => 'link',
         'maps_embed' => '',
         'ppdb_enabled' => false,
         'ppdb_url' => '',

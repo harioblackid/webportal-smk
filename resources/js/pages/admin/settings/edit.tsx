@@ -7,6 +7,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import Field from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import { edit as schoolIdentityEdit } from '@/routes/admin/school-identity';
@@ -17,6 +24,8 @@ type SettingValues = {
     tagline: string;
     logo_media_id: number | null;
     contact_whatsapp: string;
+    /** Which source the Kontak map is built from. */
+    maps_mode: 'coordinates' | 'link';
     maps_embed: string;
     ppdb_enabled: boolean;
     ppdb_url: string;
@@ -129,24 +138,74 @@ export default function SettingsEdit({
                     </Field>
 
                     <Field
-                        id="maps_embed"
-                        label="Google Maps"
-                        error={form.errors.maps_embed}
+                        id="maps_mode"
+                        label="Sumber lokasi peta"
+                        error={form.errors.maps_mode}
                     >
-                        <Textarea
-                            id="maps_embed"
-                            rows={2}
-                            aria-invalid={Boolean(form.errors.maps_embed)}
-                            value={form.data.maps_embed}
-                            onChange={(event) =>
-                                form.setData('maps_embed', event.target.value)
+                        <Select
+                            value={form.data.maps_mode}
+                            onValueChange={(value) =>
+                                form.setData(
+                                    'maps_mode',
+                                    value as SettingValues['maps_mode'],
+                                )
                             }
-                        />
-                        <p className="text-sm text-muted-foreground">
-                            Tempel URL embed atau seluruh kode iframe dari
-                            Google Maps — hanya alamat petanya yang dipakai.
-                        </p>
+                        >
+                            <SelectTrigger
+                                id="maps_mode"
+                                className="w-full"
+                                aria-invalid={Boolean(form.errors.maps_mode)}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value="link">
+                                    Link Google Maps
+                                </SelectItem>
+                                <SelectItem value="coordinates">
+                                    Titik koordinat
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </Field>
+
+                    {form.data.maps_mode === 'coordinates' ? (
+                        <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                            Peta dibangun dari <strong>Lintang</strong> dan{' '}
+                            <strong>Bujur</strong> pada{' '}
+                            <Link
+                                href={schoolIdentityEdit()}
+                                className="font-medium text-foreground underline underline-offset-4"
+                            >
+                                Identitas Sekolah
+                            </Link>
+                            . Bila salah satunya kosong, peta tidak ditampilkan.
+                        </p>
+                    ) : (
+                        <Field
+                            id="maps_embed"
+                            label="Link Google Maps"
+                            error={form.errors.maps_embed}
+                        >
+                            <Textarea
+                                id="maps_embed"
+                                rows={2}
+                                aria-invalid={Boolean(form.errors.maps_embed)}
+                                value={form.data.maps_embed}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'maps_embed',
+                                        event.target.value,
+                                    )
+                                }
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Tempel URL embed atau seluruh kode iframe dari
+                                Google Maps — hanya alamat petanya yang dipakai.
+                            </p>
+                        </Field>
+                    )}
                 </fieldset>
 
                 <fieldset className="space-y-5 rounded-xl border border-border p-5">

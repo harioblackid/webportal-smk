@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SettingRequest;
 use App\Models\Setting;
 use App\Support\MediaLibrary;
+use App\Support\SiteSettings;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +30,7 @@ class SettingController extends Controller
         'tagline',
         'logo_media_id',
         'contact_whatsapp',
+        'maps_mode',
         'maps_embed',
         'ppdb_enabled',
         'ppdb_url',
@@ -46,6 +48,7 @@ class SettingController extends Controller
                 'tagline' => $values->get('tagline') ?? '',
                 'logo_media_id' => self::intOrNull($values->get('logo_media_id')),
                 'contact_whatsapp' => $values->get('contact_whatsapp') ?? '',
+                'maps_mode' => SiteSettings::mapsMode(),
                 'maps_embed' => $values->get('maps_embed') ?? '',
                 'ppdb_enabled' => filter_var($values->get('ppdb_enabled'), FILTER_VALIDATE_BOOLEAN),
                 'ppdb_url' => $values->get('ppdb_url') ?? '',

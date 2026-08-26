@@ -15,6 +15,9 @@ use Inertia\Inertia;
  */
 class SiteSettings
 {
+    /** The two ways the school may pin its location (FR4-17). */
+    public const MAPS_MODES = ['coordinates', 'link'];
+
     /**
      * The identity, contact, and PPDB values every public page needs.
      *
@@ -107,15 +110,39 @@ class SiteSettings
         return Media::query()->whereKey($mediaId)->first()?->url();
     }
 
+    public static function mapsMode(): string
+    {
+        $mode = self::clean(Setting::get('maps_mode'));
+
+        return in_array($mode, self::MAPS_MODES, true) ? $mode : 'link';
+    }
+
     /**
-     * The Google Maps embed for FR4-17.
+     * The Google Maps embed for FR4-17, from whichever mode is selected.
      *
-     * The setting may hold either a bare URL or the whole `<iframe>` snippet
-     * Google hands out. Only the src is kept — pasted markup is never injected
-     * into the page, so a bad paste cannot become script on the public site.
+     * In `coordinates` mode the point comes from lintang/bujur on the identity
+     * record rather than from a second copy here, so the map and the published
+     * coordinates can never disagree.
+     *
+     * In `link` mode the setting may hold either a bare URL or the whole
+     * `<iframe>` snippet Google hands out. Only the src is kept — pasted markup
+     * is never injected into the page, so a bad paste cannot become script on
+     * the public site.
      */
     public static function mapsEmbedUrl(): ?string
     {
+        if (self::mapsMode() === 'coordinates') {
+            $point = SchoolIdentityFields::coordinates();
+
+            if ($point === null) {
+                return null;
+            }
+
+            return 'https://maps.google.com/maps?q='
+                .$point['lat'].','.$point['lng']
+                .'&hl=id&z=16&output=embed';
+        }
+
         $value = self::clean(Setting::get('maps_embed'));
 
         if ($value === null) {
