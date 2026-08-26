@@ -65,15 +65,48 @@ test.describe('navigasi mobile', () => {
         await expect(toggle).toBeVisible();
         await toggle.click();
 
-        const jurusanLink = page
-            .getByRole('link', { name: /jurusan/i })
-            .first();
+        const nav = page.getByRole('navigation', { name: /navigasi utama/i });
+
+        // Jurusan sits inside the "Halaman" dropdown, so reaching it on a phone
+        // takes two taps. Scoping to the nav matters: the hero has its own
+        // "Lihat Jurusan" button, and the open menu covers the whole screen —
+        // an unscoped locator finds that button and clicks the overlay instead.
+        const halaman = nav.getByRole('button', { name: /^halaman$/i });
+
+        await expect(halaman).toBeVisible();
+        await halaman.click();
+
+        const jurusanLink = nav.getByRole('link', { name: /^jurusan$/i });
 
         await expect(jurusanLink).toBeVisible();
         await jurusanLink.click();
 
         await page.waitForURL(/\/jurusan/);
         await expect(page.locator('h1')).toHaveCount(1);
+    });
+
+    test('dropdown tetap terbuka saat diketuk, bukan tertutup lagi', async ({
+        page,
+    }) => {
+        // A tap fires pointerenter before click. Without the pointerType guard
+        // in the header, the hover handler opened the dropdown and the click
+        // that followed closed it again — unusable on any touch device.
+        await page.goto('/');
+
+        await page
+            .getByRole('button', { name: /menu|navigasi|toggle/i })
+            .first()
+            .click();
+
+        const nav = page.getByRole('navigation', { name: /navigasi utama/i });
+        const profil = nav.getByRole('button', { name: /^profil$/i });
+
+        await profil.click();
+
+        await expect(profil).toHaveAttribute('aria-expanded', 'true');
+        await expect(
+            nav.getByRole('link', { name: /visi misi/i }),
+        ).toBeVisible();
     });
 });
 

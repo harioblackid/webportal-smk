@@ -209,8 +209,21 @@ export default function Header() {
                                 <li
                                     key={entry.text}
                                     className="md:relative"
-                                    onMouseEnter={() => setOpenMenu(entry.text)}
-                                    onMouseLeave={() => setOpenMenu(null)}
+                                    // Guarded on pointerType: a tap fires
+                                    // pointerenter *then* click, so an
+                                    // unguarded hover-open would be undone by
+                                    // the click that follows it and the
+                                    // dropdown could never be opened by touch.
+                                    onPointerEnter={(event) => {
+                                        if (event.pointerType === 'mouse') {
+                                            setOpenMenu(entry.text);
+                                        }
+                                    }}
+                                    onPointerLeave={(event) => {
+                                        if (event.pointerType === 'mouse') {
+                                            setOpenMenu(null);
+                                        }
+                                    }}
                                 >
                                     <button
                                         type="button"
