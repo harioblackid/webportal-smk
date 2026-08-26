@@ -9,11 +9,16 @@ test('profil renders with its own metadata', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('public/profil')
             ->where('seo.title', 'Profil Sekolah')
-        )
-        // FR4-15: the four required blocks are static copy in the component.
-        ->assertSee('Sambutan kepala sekolah', false)
-        ->assertSee('Sejarah singkat', false)
-        ->assertSee('YPLP Dasar Menengah PGRI', false);
+        );
+
+    // FR4-15: the four required blocks are static copy in the component, so
+    // they are asserted there. The response carries only the Inertia props —
+    // the copy itself is rendered on the client.
+    expect(file_get_contents(resource_path('js/pages/public/profil.tsx')))
+        ->toContain('Sambutan kepala sekolah')
+        ->toContain('Sejarah singkat')
+        ->toContain('Visi & misi')
+        ->toContain('YPLP Dasar Menengah PGRI');
 });
 
 test('kontak turns the stored contact details into live links', function () {

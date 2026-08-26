@@ -9,7 +9,9 @@ import {
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
-import { buttonClasses } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminLayout from '@/layouts/admin-layout';
 import { create as createHero } from '@/routes/admin/heroes';
 import { index as mediaIndex } from '@/routes/admin/media';
@@ -51,81 +53,80 @@ export default function Dashboard({ stats, recentPosts }: DashboardProps) {
         <AdminLayout
             title="Dasbor"
             actions={
-                <Link href={createPost()} className={buttonClasses()}>
+                <Link href={createPost()} className={buttonVariants()}>
                     <Plus className="size-4" aria-hidden="true" />
                     Tulis berita
                 </Link>
             }
         >
-            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {cards.map(({ label, value, icon: Icon }) => (
-                    <div
-                        key={label}
-                        className="rounded-xl border border-charcoal/15 p-5"
-                    >
-                        <dt className="flex items-center gap-2 text-sm font-medium text-charcoal">
-                            <Icon className="size-4" aria-hidden="true" />
-                            {label}
-                        </dt>
-                        <dd className="mt-2 font-display text-3xl font-semibold text-onyx">
-                            {value}
-                        </dd>
-                    </div>
+                    <Card key={label}>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <Icon className="size-4" aria-hidden="true" />
+                                {label}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-semibold">{value}</p>
+                        </CardContent>
+                    </Card>
                 ))}
-            </dl>
+            </div>
 
-            <section className="mt-8">
-                <h2 className="font-display text-lg font-semibold text-onyx">
-                    Berita terbaru
-                </h2>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Berita terbaru</CardTitle>
+                </CardHeader>
 
-                {recentPosts.length === 0 ? (
-                    <p className="mt-3 text-sm text-charcoal">
-                        Belum ada berita. Mulai dari tombol “Tulis berita”.
-                    </p>
-                ) : (
-                    <ul className="mt-3 divide-y divide-charcoal/10 rounded-xl border border-charcoal/15">
-                        {recentPosts.map((post) => (
-                            <li key={post.id}>
-                                <Link
-                                    href={post.editUrl}
-                                    className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-mist/60"
-                                >
-                                    <span className="flex-1 font-medium text-onyx">
-                                        {post.title}
-                                    </span>
-
-                                    <span
-                                        className={
-                                            post.status === 'published'
-                                                ? 'rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand'
-                                                : 'rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-charcoal'
-                                        }
+                <CardContent>
+                    {recentPosts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            Belum ada berita. Mulai dari tombol “Tulis berita”.
+                        </p>
+                    ) : (
+                        <ul className="divide-y divide-border rounded-md border">
+                            {recentPosts.map((post) => (
+                                <li key={post.id}>
+                                    <Link
+                                        href={post.editUrl}
+                                        className="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-muted/60"
                                     >
-                                        {post.status === 'published'
-                                            ? 'Terbit'
-                                            : 'Draf'}
-                                    </span>
+                                        <span className="flex-1 font-medium">
+                                            {post.title}
+                                        </span>
 
-                                    <span className="text-sm text-charcoal">
-                                        {post.publishedAtLabel ?? '—'}
-                                    </span>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </section>
+                                        <Badge
+                                            variant={
+                                                post.status === 'published'
+                                                    ? 'default'
+                                                    : 'secondary'
+                                            }
+                                        >
+                                            {post.status === 'published'
+                                                ? 'Terbit'
+                                                : 'Draf'}
+                                        </Badge>
 
-            <section className="mt-8">
-                <h2 className="font-display text-lg font-semibold text-onyx">
-                    Aksi cepat
-                </h2>
+                                        <span className="text-sm text-muted-foreground">
+                                            {post.publishedAtLabel ?? '—'}
+                                        </span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </CardContent>
+            </Card>
 
-                <div className="mt-3 flex flex-wrap gap-3">
+            <section>
+                <h2 className="mb-3 text-lg font-semibold">Aksi cepat</h2>
+
+                <div className="flex flex-wrap gap-3">
                     <Link
                         href={createPost()}
-                        className={buttonClasses('secondary')}
+                        className={buttonVariants({ variant: 'outline' })}
                     >
                         <PencilLine className="size-4" aria-hidden="true" />
                         Tulis berita
@@ -133,7 +134,7 @@ export default function Dashboard({ stats, recentPosts }: DashboardProps) {
 
                     <Link
                         href={createHero()}
-                        className={buttonClasses('secondary')}
+                        className={buttonVariants({ variant: 'outline' })}
                     >
                         <LayoutTemplate className="size-4" aria-hidden="true" />
                         Atur hero
@@ -141,7 +142,7 @@ export default function Dashboard({ stats, recentPosts }: DashboardProps) {
 
                     <Link
                         href={mediaIndex()}
-                        className={buttonClasses('secondary')}
+                        className={buttonVariants({ variant: 'outline' })}
                     >
                         <Images className="size-4" aria-hidden="true" />
                         Pustaka media

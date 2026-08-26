@@ -2,10 +2,16 @@ import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import type { FormEvent } from 'react';
 
-import Button from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
-import Select from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     index as usersIndex,
@@ -60,7 +66,7 @@ export default function UserForm({ user, roles }: UserFormProps) {
             actions={
                 <Link
                     href={usersIndex()}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-charcoal hover:bg-mist"
+                    className={buttonVariants({ variant: 'ghost' })}
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Kembali ke daftar
@@ -74,7 +80,7 @@ export default function UserForm({ user, roles }: UserFormProps) {
                         required
                         autoFocus={!isEdit}
                         autoComplete="name"
-                        invalid={Boolean(form.errors.name)}
+                        aria-invalid={Boolean(form.errors.name)}
                         value={form.data.name}
                         onChange={(event) =>
                             form.setData('name', event.target.value)
@@ -88,7 +94,7 @@ export default function UserForm({ user, roles }: UserFormProps) {
                         type="email"
                         required
                         autoComplete="username"
-                        invalid={Boolean(form.errors.email)}
+                        aria-invalid={Boolean(form.errors.email)}
                         value={form.data.email}
                         onChange={(event) =>
                             form.setData('email', event.target.value)
@@ -106,14 +112,14 @@ export default function UserForm({ user, roles }: UserFormProps) {
                         type="password"
                         required={!isEdit}
                         autoComplete="new-password"
-                        invalid={Boolean(form.errors.password)}
+                        aria-invalid={Boolean(form.errors.password)}
                         value={form.data.password}
                         onChange={(event) =>
                             form.setData('password', event.target.value)
                         }
                     />
                     {isEdit ? (
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Biarkan kosong agar kata sandi tidak berubah.
                         </p>
                     ) : null}
@@ -141,27 +147,32 @@ export default function UserForm({ user, roles }: UserFormProps) {
 
                 <Field id="role" label="Role" error={form.errors.role}>
                     <Select
-                        id="role"
                         value={form.data.role}
                         disabled={user?.isLastSuperadmin === true}
-                        invalid={Boolean(form.errors.role)}
-                        onChange={(event) =>
-                            form.setData('role', event.target.value)
-                        }
+                        onValueChange={(value) => form.setData('role', value)}
                     >
-                        {roles.map((role) => (
-                            <option key={role.value} value={role.value}>
-                                {role.label}
-                            </option>
-                        ))}
+                        <SelectTrigger
+                            id="role"
+                            className="w-full"
+                            aria-invalid={Boolean(form.errors.role)}
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {roles.map((role) => (
+                                <SelectItem key={role.value} value={role.value}>
+                                    {role.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
                     </Select>
                     {user?.isLastSuperadmin === true ? (
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Ini satu-satunya Superadmin, jadi role-nya tidak
                             dapat diubah.
                         </p>
                     ) : (
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Editor dapat mengelola berita, kategori, hero, dan
                             media. Superadmin juga mengelola jurusan,
                             pengaturan, dan pengguna.
@@ -169,7 +180,7 @@ export default function UserForm({ user, roles }: UserFormProps) {
                     )}
                 </Field>
 
-                <div className="border-t border-charcoal/15 pt-6">
+                <div className="border-t border-border pt-6">
                     <Button type="submit" disabled={form.processing}>
                         {form.processing ? 'Menyimpan…' : 'Simpan'}
                     </Button>

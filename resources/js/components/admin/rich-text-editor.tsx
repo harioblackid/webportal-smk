@@ -20,8 +20,9 @@ import { useState } from 'react';
 
 import MediaGrid from '@/components/admin/media-grid';
 import Modal from '@/components/admin/modal';
-import Button from '@/components/ui/button';
-import Input from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { MediaItem } from '@/types';
 
@@ -59,11 +60,11 @@ function ToolbarButton({
             aria-pressed={active}
             title={label}
             className={cn(
-                'inline-flex size-11 items-center justify-center rounded-lg',
+                'inline-flex size-9 items-center justify-center rounded-md transition-colors',
                 'disabled:pointer-events-none disabled:opacity-40',
                 active
-                    ? 'bg-brand text-white'
-                    : 'text-charcoal hover:bg-mist hover:text-onyx',
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
             )}
         >
             <Icon className="size-4" />
@@ -112,7 +113,7 @@ export default function RichTextEditor({
         editorProps: {
             attributes: {
                 id,
-                class: 'rich-text min-h-64 px-4 py-3 focus:outline-none',
+                class: 'prose prose-sm dark:prose-invert max-w-none min-h-64 px-4 py-3 focus:outline-none',
             },
         },
         onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),
@@ -159,24 +160,19 @@ export default function RichTextEditor({
     }
 
     return (
-        <div className="space-y-1.5">
-            <label
-                htmlFor={id}
-                className="block text-sm font-semibold text-onyx"
-            >
-                {label}
-            </label>
+        <div className="grid gap-2">
+            <Label htmlFor={id}>{label}</Label>
 
             <div
                 className={cn(
-                    'overflow-hidden rounded-lg border bg-white',
-                    error ? 'border-red-600' : 'border-charcoal/30',
+                    'overflow-hidden rounded-md border bg-transparent shadow-xs',
+                    error ? 'border-destructive' : 'border-input',
                 )}
             >
                 <div
                     role="toolbar"
                     aria-label="Format teks"
-                    className="flex flex-wrap items-center gap-0.5 border-b border-charcoal/15 bg-mist/60 px-1.5 py-1"
+                    className="flex flex-wrap items-center gap-0.5 border-b bg-muted/50 px-1.5 py-1"
                 >
                     <ToolbarButton
                         icon={Bold}
@@ -281,10 +277,12 @@ export default function RichTextEditor({
                 <EditorContent editor={editor} />
             </div>
 
-            {hint ? <p className="text-sm text-charcoal">{hint}</p> : null}
+            {hint ? (
+                <p className="text-sm text-muted-foreground">{hint}</p>
+            ) : null}
 
             {error ? (
-                <p role="alert" className="text-sm text-red-700">
+                <p role="alert" className="text-sm text-destructive">
                     {error}
                 </p>
             ) : null}
@@ -306,7 +304,7 @@ export default function RichTextEditor({
 
                     <div className="flex flex-wrap justify-end gap-3">
                         <Button
-                            variant="secondary"
+                            variant="outline"
                             onClick={() => setLinkOpen(false)}
                         >
                             Batal

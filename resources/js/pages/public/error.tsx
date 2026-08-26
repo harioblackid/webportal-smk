@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 
-import { buttonClasses } from '@/components/ui/button';
+import { buttonClasses } from '@/components/public/button';
+import HeroText from '@/components/public/hero-text';
 import PublicLayout from '@/layouts/public-layout';
 import { home } from '@/routes';
 import { index as postsIndex } from '@/routes/posts';
@@ -18,7 +19,7 @@ const messages: Record<number, { title: string; body: string }> = {
     },
 };
 
-/** FR4-21 — a 404 that offers a way back to Home and Berita. */
+/** AstroWind's 404 page — a big status code over the two ways back. */
 export default function ErrorPage({ status, seo }: ErrorProps) {
     const message = messages[status] ?? {
         title: 'Terjadi kesalahan',
@@ -27,35 +28,42 @@ export default function ErrorPage({ status, seo }: ErrorProps) {
 
     return (
         <PublicLayout seo={seo}>
-            <div className="mx-auto max-w-3xl px-5 py-16 sm:px-6 lg:py-24">
-                <p
-                    className="font-display text-6xl font-semibold text-brand/25 sm:text-8xl"
-                    aria-hidden="true"
-                >
-                    {status}
-                </p>
+            <HeroText
+                tagline={
+                    <span className="text-9xl font-bold text-aw-primary/25">
+                        {status}
+                    </span>
+                }
+                title={message.title}
+                subtitle={message.body}
+                actions={
+                    <>
+                        <div className="flex w-full sm:w-auto">
+                            <Link
+                                href={home()}
+                                className={buttonClasses(
+                                    'primary',
+                                    'w-full sm:mb-0',
+                                )}
+                            >
+                                Kembali ke beranda
+                            </Link>
+                        </div>
 
-                <h1 className="mt-4 font-display text-[30px] leading-tight font-semibold text-onyx sm:text-4xl">
-                    {message.title}
-                </h1>
-
-                <p className="mt-4 max-w-xl text-base text-charcoal">
-                    {message.body}
-                </p>
-
-                <div className="mt-8 flex flex-wrap gap-3">
-                    <Link href={home()} className={buttonClasses('primary')}>
-                        Kembali ke beranda
-                    </Link>
-
-                    <Link
-                        href={postsIndex()}
-                        className={buttonClasses('secondary')}
-                    >
-                        Lihat berita
-                    </Link>
-                </div>
-            </div>
+                        <div className="flex w-full sm:w-auto">
+                            <Link
+                                href={postsIndex()}
+                                className={buttonClasses(
+                                    'secondary',
+                                    'w-full sm:mb-0',
+                                )}
+                            >
+                                Lihat berita
+                            </Link>
+                        </div>
+                    </>
+                }
+            />
         </PublicLayout>
     );
 }

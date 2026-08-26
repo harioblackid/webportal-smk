@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type ModalProps = {
@@ -59,35 +60,34 @@ export default function Modal({
                 onClose();
             }}
             className={cn(
-                'm-auto w-[calc(100vw-2rem)] rounded-xl bg-white p-0 text-onyx shadow-xl',
-                'backdrop:bg-onyx/50',
+                'm-auto w-[calc(100vw-2rem)] rounded-xl border bg-background p-0 text-foreground shadow-lg',
+                'backdrop:bg-black/50 backdrop:backdrop-blur-xs',
                 size === 'lg' ? 'max-w-3xl' : 'max-w-md',
             )}
         >
-            <div className="flex items-start gap-3 border-b border-charcoal/15 p-5">
+            <div className="flex items-start gap-3 border-b border-border p-5">
                 <div className="flex-1">
-                    <h2
-                        id="modal-title"
-                        className="font-display text-lg font-semibold"
-                    >
+                    <h2 id="modal-title" className="text-lg font-semibold">
                         {title}
                     </h2>
 
                     {description ? (
-                        <p className="mt-1 text-sm text-charcoal">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             {description}
                         </p>
                     ) : null}
                 </div>
 
-                <button
+                <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={onClose}
                     aria-label="Tutup"
-                    className="-m-2 inline-flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-mist"
+                    className="-mt-1 -mr-1 shrink-0"
                 >
-                    <X className="size-4" aria-hidden="true" />
-                </button>
+                    <X aria-hidden="true" />
+                </Button>
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>

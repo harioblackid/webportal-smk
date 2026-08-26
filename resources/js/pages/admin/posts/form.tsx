@@ -6,11 +6,17 @@ import { useState } from 'react';
 import ConfirmDelete from '@/components/admin/confirm-delete';
 import MediaPicker from '@/components/admin/media-picker';
 import RichTextEditor from '@/components/admin/rich-text-editor';
-import Button from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
-import Select from '@/components/ui/select';
-import Textarea from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     destroy as destroyPost,
@@ -36,6 +42,12 @@ type PostFormProps = {
     categories: CategoryOption[];
     mediaLibrary: MediaItem[];
 };
+
+/**
+ * Radix's Select cannot hold an empty string as a value — that is how it
+ * signals "nothing selected" — so the no-category choice needs a sentinel.
+ */
+const NO_CATEGORY = 'none';
 
 /** Mirrors App\Support\Slug so the preview matches what the server will store. */
 const slugify = (value: string) =>
@@ -95,7 +107,7 @@ export default function PostForm({
             actions={
                 <Link
                     href={postsIndex()}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-charcoal hover:bg-mist"
+                    className={buttonVariants({ variant: 'ghost' })}
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Kembali ke daftar
@@ -108,7 +120,7 @@ export default function PostForm({
                         id="title"
                         required
                         autoFocus={!isEdit}
-                        invalid={Boolean(form.errors.title)}
+                        aria-invalid={Boolean(form.errors.title)}
                         value={form.data.title}
                         onChange={(event) => setTitle(event.target.value)}
                     />
@@ -117,7 +129,7 @@ export default function PostForm({
                 <Field id="slug" label="Slug (URL)" error={form.errors.slug}>
                     <Input
                         id="slug"
-                        invalid={Boolean(form.errors.slug)}
+                        aria-invalid={Boolean(form.errors.slug)}
                         value={form.data.slug}
                         placeholder="otomatis dari judul"
                         onChange={(event) => {
@@ -125,7 +137,7 @@ export default function PostForm({
                             form.setData('slug', event.target.value);
                         }}
                     />
-                    <p className="text-sm text-charcoal">
+                    <p className="text-sm text-muted-foreground">
                         /berita/{form.data.slug || slugify(form.data.title)} —
                         jika bentrok, sistem menambahkan angka di belakang.
                     </p>
@@ -138,40 +150,59 @@ export default function PostForm({
                         error={form.errors.category_id}
                     >
                         <Select
-                            id="category_id"
-                            value={form.data.category_id ?? ''}
-                            invalid={Boolean(form.errors.category_id)}
-                            onChange={(event) =>
+                            value={
+                                form.data.category_id === null
+                                    ? NO_CATEGORY
+                                    : String(form.data.category_id)
+                            }
+                            onValueChange={(value) =>
                                 form.setData(
                                     'category_id',
-                                    event.target.value === ''
+                                    value === NO_CATEGORY
                                         ? null
-                                        : Number(event.target.value),
+                                        : Number(value),
                                 )
                             }
                         >
-                            <option value="">Tanpa kategori</option>
-                            {categories.map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
-                                </option>
-                            ))}
+                            <SelectTrigger
+                                id="category_id"
+                                className="w-full"
+                                aria-invalid={Boolean(form.errors.category_id)}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={NO_CATEGORY}>
+                                    Tanpa kategori
+                                </SelectItem>
+                                {categories.map((category) => (
+                                    <SelectItem
+                                        key={category.id}
+                                        value={String(category.id)}
+                                    >
+                                        {category.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
                         </Select>
                     </Field>
 
                     <Field id="type" label="Jenis" error={form.errors.type}>
                         <Select
-                            id="type"
                             value={form.data.type}
-                            onChange={(event) =>
-                                form.setData(
-                                    'type',
-                                    event.target.value as PostType,
-                                )
+                            onValueChange={(value) =>
+                                form.setData('type', value as PostType)
                             }
                         >
-                            <option value="berita">Berita</option>
-                            <option value="pengumuman">Pengumuman</option>
+                            <SelectTrigger id="type" className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="berita">Berita</SelectItem>
+                                <SelectItem value="pengumuman">
+                                    Pengumuman
+                                </SelectItem>
+                            </SelectContent>
                         </Select>
                     </Field>
                 </div>
@@ -194,13 +225,13 @@ export default function PostForm({
                         id="excerpt"
                         rows={3}
                         maxLength={300}
-                        invalid={Boolean(form.errors.excerpt)}
+                        aria-invalid={Boolean(form.errors.excerpt)}
                         value={form.data.excerpt}
                         onChange={(event) =>
                             form.setData('excerpt', event.target.value)
                         }
                     />
-                    <p className="text-sm text-charcoal">
+                    <p className="text-sm text-muted-foreground">
                         Tampil di kartu berita dan jadi deskripsi hasil
                         pencarian. Maks 300 karakter.
                     </p>
@@ -222,17 +253,20 @@ export default function PostForm({
                         error={form.errors.status}
                     >
                         <Select
-                            id="status"
                             value={form.data.status}
-                            onChange={(event) =>
-                                form.setData(
-                                    'status',
-                                    event.target.value as PostStatus,
-                                )
+                            onValueChange={(value) =>
+                                form.setData('status', value as PostStatus)
                             }
                         >
-                            <option value="draft">Draf</option>
-                            <option value="published">Terbit</option>
+                            <SelectTrigger id="status" className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="draft">Draf</SelectItem>
+                                <SelectItem value="published">
+                                    Terbit
+                                </SelectItem>
+                            </SelectContent>
                         </Select>
                     </Field>
 
@@ -244,19 +278,19 @@ export default function PostForm({
                         <Input
                             id="published_at"
                             type="datetime-local"
-                            invalid={Boolean(form.errors.published_at)}
+                            aria-invalid={Boolean(form.errors.published_at)}
                             value={form.data.published_at}
                             onChange={(event) =>
                                 form.setData('published_at', event.target.value)
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Kosongkan untuk memakai waktu saat dipublikasikan.
                         </p>
                     </Field>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 border-t border-charcoal/15 pt-6">
+                <div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
                     <Button type="submit" disabled={form.processing}>
                         {form.processing ? 'Menyimpan…' : 'Simpan'}
                     </Button>
@@ -266,7 +300,7 @@ export default function PostForm({
                             href={post.publicUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-brand hover:bg-mist"
+                            className={buttonVariants({ variant: 'link' })}
                         >
                             <ExternalLink
                                 className="size-4"

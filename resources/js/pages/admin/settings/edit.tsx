@@ -2,10 +2,12 @@ import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
 import MediaPicker from '@/components/admin/media-picker';
-import Button from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
-import Textarea from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import { update as updateSettings } from '@/routes/admin/settings';
 import type { MediaItem } from '@/types';
@@ -48,14 +50,14 @@ export default function SettingsEdit({
 
     return (
         <AdminLayout title="Pengaturan situs">
-            <p className="text-sm text-charcoal">
+            <p className="text-sm text-muted-foreground">
                 Perubahan di halaman ini langsung tampil di situs publik, tanpa
                 perlu deploy ulang.
             </p>
 
             <form onSubmit={submit} className="mt-6 max-w-3xl space-y-8">
-                <fieldset className="space-y-5 rounded-xl border border-charcoal/15 p-5">
-                    <legend className="px-1 font-display text-lg font-semibold text-onyx">
+                <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-lg font-semibold text-foreground">
                         Identitas
                     </legend>
 
@@ -67,7 +69,7 @@ export default function SettingsEdit({
                         <Input
                             id="school_name"
                             required
-                            invalid={Boolean(form.errors.school_name)}
+                            aria-invalid={Boolean(form.errors.school_name)}
                             value={form.data.school_name}
                             onChange={(event) =>
                                 form.setData('school_name', event.target.value)
@@ -83,13 +85,13 @@ export default function SettingsEdit({
                         <Input
                             id="tagline"
                             maxLength={200}
-                            invalid={Boolean(form.errors.tagline)}
+                            aria-invalid={Boolean(form.errors.tagline)}
                             value={form.data.tagline}
                             onChange={(event) =>
                                 form.setData('tagline', event.target.value)
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Dipakai sebagai deskripsi sekolah di data
                             terstruktur dan pratinjau tautan.
                         </p>
@@ -105,8 +107,8 @@ export default function SettingsEdit({
                     />
                 </fieldset>
 
-                <fieldset className="space-y-5 rounded-xl border border-charcoal/15 p-5">
-                    <legend className="px-1 font-display text-lg font-semibold text-onyx">
+                <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-lg font-semibold text-foreground">
                         Kontak
                     </legend>
 
@@ -118,7 +120,7 @@ export default function SettingsEdit({
                         <Textarea
                             id="contact_address"
                             rows={2}
-                            invalid={Boolean(form.errors.contact_address)}
+                            aria-invalid={Boolean(form.errors.contact_address)}
                             value={form.data.contact_address}
                             onChange={(event) =>
                                 form.setData(
@@ -138,7 +140,9 @@ export default function SettingsEdit({
                             <Input
                                 id="contact_phone"
                                 type="tel"
-                                invalid={Boolean(form.errors.contact_phone)}
+                                aria-invalid={Boolean(
+                                    form.errors.contact_phone,
+                                )}
                                 value={form.data.contact_phone}
                                 onChange={(event) =>
                                     form.setData(
@@ -158,7 +162,9 @@ export default function SettingsEdit({
                                 id="contact_whatsapp"
                                 type="tel"
                                 placeholder="08xxxxxxxxxx"
-                                invalid={Boolean(form.errors.contact_whatsapp)}
+                                aria-invalid={Boolean(
+                                    form.errors.contact_whatsapp,
+                                )}
                                 value={form.data.contact_whatsapp}
                                 onChange={(event) =>
                                     form.setData(
@@ -178,7 +184,7 @@ export default function SettingsEdit({
                         <Input
                             id="contact_email"
                             type="email"
-                            invalid={Boolean(form.errors.contact_email)}
+                            aria-invalid={Boolean(form.errors.contact_email)}
                             value={form.data.contact_email}
                             onChange={(event) =>
                                 form.setData(
@@ -197,40 +203,36 @@ export default function SettingsEdit({
                         <Textarea
                             id="maps_embed"
                             rows={2}
-                            invalid={Boolean(form.errors.maps_embed)}
+                            aria-invalid={Boolean(form.errors.maps_embed)}
                             value={form.data.maps_embed}
                             onChange={(event) =>
                                 form.setData('maps_embed', event.target.value)
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Tempel URL embed atau seluruh kode iframe dari
                             Google Maps — hanya alamat petanya yang dipakai.
                         </p>
                     </Field>
                 </fieldset>
 
-                <fieldset className="space-y-5 rounded-xl border border-charcoal/15 p-5">
-                    <legend className="px-1 font-display text-lg font-semibold text-onyx">
+                <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-lg font-semibold text-foreground">
                         Banner PPDB
                     </legend>
 
-                    <label className="flex min-h-11 items-center gap-3">
-                        <input
-                            type="checkbox"
-                            className="size-4 accent-brand"
+                    <div className="flex items-center space-x-3">
+                        <Checkbox
+                            id="ppdb_enabled"
                             checked={form.data.ppdb_enabled}
-                            onChange={(event) =>
-                                form.setData(
-                                    'ppdb_enabled',
-                                    event.target.checked,
-                                )
+                            onCheckedChange={(checked) =>
+                                form.setData('ppdb_enabled', checked === true)
                             }
                         />
-                        <span className="text-sm text-onyx">
+                        <Label htmlFor="ppdb_enabled">
                             Tampilkan banner PPDB di situs
-                        </span>
-                    </label>
+                        </Label>
+                    </div>
 
                     <Field
                         id="ppdb_url"
@@ -241,13 +243,13 @@ export default function SettingsEdit({
                             id="ppdb_url"
                             type="url"
                             placeholder="https://"
-                            invalid={Boolean(form.errors.ppdb_url)}
+                            aria-invalid={Boolean(form.errors.ppdb_url)}
                             value={form.data.ppdb_url}
                             onChange={(event) =>
                                 form.setData('ppdb_url', event.target.value)
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Wajib diisi bila banner dinyalakan.
                         </p>
                     </Field>
@@ -263,8 +265,8 @@ export default function SettingsEdit({
                     />
                 </fieldset>
 
-                <fieldset className="space-y-5 rounded-xl border border-charcoal/15 p-5">
-                    <legend className="px-1 font-display text-lg font-semibold text-onyx">
+                <fieldset className="space-y-5 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-lg font-semibold text-foreground">
                         Google Analytics &amp; Search Console
                     </legend>
 
@@ -276,7 +278,9 @@ export default function SettingsEdit({
                         <Input
                             id="ga4_measurement_id"
                             placeholder="G-XXXXXXXXXX"
-                            invalid={Boolean(form.errors.ga4_measurement_id)}
+                            aria-invalid={Boolean(
+                                form.errors.ga4_measurement_id,
+                            )}
                             value={form.data.ga4_measurement_id}
                             onChange={(event) =>
                                 form.setData(
@@ -285,7 +289,7 @@ export default function SettingsEdit({
                                 )
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Kode pelacakan dimuat di halaman publik saja —
                             aktivitas di /admin tidak ikut terhitung.
                         </p>
@@ -299,7 +303,7 @@ export default function SettingsEdit({
                         <Input
                             id="search_console_verification"
                             placeholder="Tempel kode atau tag <meta> dari Google"
-                            invalid={Boolean(
+                            aria-invalid={Boolean(
                                 form.errors.search_console_verification,
                             )}
                             value={form.data.search_console_verification}
@@ -310,7 +314,7 @@ export default function SettingsEdit({
                                 )
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Boleh menempel seluruh tag{' '}
                             <code>
                                 &lt;meta name="google-site-verification"…&gt;
@@ -321,7 +325,7 @@ export default function SettingsEdit({
                     </Field>
                 </fieldset>
 
-                <div className="border-t border-charcoal/15 pt-6">
+                <div className="border-t border-border pt-6">
                     <Button type="submit" disabled={form.processing}>
                         {form.processing ? 'Menyimpan…' : 'Simpan pengaturan'}
                     </Button>

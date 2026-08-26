@@ -27,6 +27,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- No SSR process runs during the suite; leaving it on costs a refused
+             connection on every Inertia response. FR6-1 is proven by the browser
+             suite and tests/Feature/Public/SsrTest.php instead. -->
+        <env name="INERTIA_SSR_ENABLED" value="false"/>
         <env name="DB_CONNECTION" value="mariadb"/>
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="3306"/>

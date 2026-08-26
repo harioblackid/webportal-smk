@@ -5,7 +5,7 @@ import type { Image } from '@/types';
 
 type SiteImageProps = {
     image: Image | null;
-    /** Tailwind aspect-ratio class — the CLS guard from FR6-14. */
+    /** Tailwind aspect-ratio class — the guard against layout shift. */
     ratio?: string;
     className?: string;
     /** Above-the-fold images opt out of lazy loading. */
@@ -19,7 +19,7 @@ type SiteImageProps = {
  *
  * The box reserves its space with an aspect ratio instead of width/height
  * attributes: the media table stores no intrinsic dimensions, and a reserved
- * box holds the layout still just as well (FR6-14).
+ * box holds the layout still just as well.
  *
  * A null image is a normal state, not an error — the CMS is empty until the
  * school uploads photos, and a page must still look deliberate meanwhile.
@@ -33,12 +33,16 @@ export default function SiteImage({
 }: SiteImageProps) {
     return (
         <div
-            className={cn('relative overflow-hidden bg-mist', ratio, className)}
+            className={cn(
+                'relative overflow-hidden bg-gray-400 dark:bg-slate-700',
+                ratio,
+                className,
+            )}
         >
             {image === null ? (
-                <span className="absolute inset-0 flex items-center justify-center bg-brand/5">
+                <span className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-slate-800">
                     <ImageIcon
-                        className="size-8 text-brand/30"
+                        className="size-8 text-aw-muted"
                         aria-hidden="true"
                     />
                 </span>

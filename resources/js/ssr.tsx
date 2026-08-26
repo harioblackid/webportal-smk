@@ -4,6 +4,8 @@ import { createInertiaApp } from '@inertiajs/react';
 import createServer from '@inertiajs/react/server';
 import { renderToString } from 'react-dom/server';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const appName = import.meta.env.VITE_APP_NAME || 'SMK PGRI Telagasari';
 
 const pages = import.meta.glob<{ default: ResolvedComponent }>(
@@ -32,7 +34,13 @@ const renderPage = (page: Page) =>
 
             return (await importPage()).default;
         },
-        setup: ({ App, props }) => <App {...props} />,
+        // Mirrors withApp() in app.tsx: the admin sidebar renders Radix
+        // tooltips, and those throw outside a provider — on the server too.
+        setup: ({ App, props }) => (
+            <TooltipProvider delayDuration={0}>
+                <App {...props} />
+            </TooltipProvider>
+        ),
     });
 
 // In dev, @inertiajs/vite serves this default export over /__inertia_ssr.

@@ -69,12 +69,14 @@ export default function MediaGrid({
 
     return (
         <div>
-            <label className="mb-5 flex cursor-pointer flex-wrap items-center gap-3 rounded-lg border border-dashed border-charcoal/30 p-4 text-sm hover:bg-mist">
-                <Upload className="size-5 text-brand" aria-hidden="true" />
-                <span className="font-medium text-onyx">
+            <label className="mb-5 flex cursor-pointer flex-wrap items-center gap-3 rounded-lg border border-dashed border-input p-4 text-sm hover:bg-muted">
+                <Upload className="size-5 text-primary" aria-hidden="true" />
+                <span className="font-medium text-foreground">
                     {uploading ? 'Mengunggah…' : 'Unggah gambar baru'}
                 </span>
-                <span className="text-charcoal">JPG/PNG/WebP, maks 3 MB</span>
+                <span className="text-muted-foreground">
+                    JPG/PNG/WebP, maks 3 MB
+                </span>
                 <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -85,13 +87,13 @@ export default function MediaGrid({
             </label>
 
             {uploadError === null ? null : (
-                <p role="alert" className="mb-4 text-sm text-red-700">
+                <p role="alert" className="mb-4 text-sm text-destructive">
                     {uploadError}
                 </p>
             )}
 
             {library.length === 0 ? (
-                <p className="text-sm text-charcoal">
+                <p className="text-sm text-muted-foreground">
                     Belum ada gambar di pustaka.
                 </p>
             ) : (
@@ -105,16 +107,16 @@ export default function MediaGrid({
                                 className={cn(
                                     'block w-full overflow-hidden rounded-lg border-2 text-left',
                                     item.id === selectedId
-                                        ? 'border-brand'
-                                        : 'border-transparent hover:border-charcoal/30',
+                                        ? 'border-primary'
+                                        : 'border-transparent hover:border-input',
                                 )}
                             >
                                 <img
                                     src={item.thumbUrl}
                                     alt={item.alt}
-                                    className="aspect-square w-full bg-mist object-cover"
+                                    className="aspect-square w-full bg-muted object-cover"
                                 />
-                                <span className="block truncate px-1 py-1.5 text-xs text-charcoal">
+                                <span className="block truncate px-1 py-1.5 text-xs text-muted-foreground">
                                     {item.filename}
                                 </span>
                             </button>

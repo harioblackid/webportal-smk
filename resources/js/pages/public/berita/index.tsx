@@ -1,8 +1,11 @@
 import { Link } from '@inertiajs/react';
 import { Newspaper } from 'lucide-react';
 
+import { buttonClasses } from '@/components/public/button';
+import HeroText from '@/components/public/hero-text';
 import NewsCard from '@/components/public/news-card';
 import Pagination from '@/components/public/pagination';
+import WidgetWrapper from '@/components/public/widget-wrapper';
 import PublicLayout from '@/layouts/public-layout';
 import { cn } from '@/lib/utils';
 import { index as postsIndex } from '@/routes/posts';
@@ -31,31 +34,16 @@ export default function BeritaIndex({
 
     return (
         <PublicLayout seo={seo}>
-            <header className="border-b border-charcoal/10 bg-mist">
-                <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:py-14">
-                    <p className="flex items-center gap-3 text-xs font-semibold tracking-[0.2em] text-brand uppercase">
-                        <span
-                            className="h-px w-8 bg-brand-accent"
-                            aria-hidden="true"
-                        />
-                        Kabar Sekolah
-                    </p>
+            <HeroText
+                tagline="Kabar Sekolah"
+                title={heading}
+                subtitle="Kegiatan, prestasi, dan pengumuman resmi dari SMK PGRI Telagasari."
+            />
 
-                    <h1 className="mt-4 max-w-2xl font-display text-[30px] leading-tight font-semibold text-onyx sm:text-4xl lg:text-5xl">
-                        {heading}
-                    </h1>
-
-                    <p className="mt-4 max-w-xl text-base text-charcoal">
-                        Kegiatan, prestasi, dan pengumuman resmi dari SMK PGRI
-                        Telagasari.
-                    </p>
-                </div>
-            </header>
-
-            <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:py-14">
+            <WidgetWrapper containerClass="mx-auto max-w-6xl pt-0 md:pt-0 lg:pt-0">
                 {categories.length > 0 && (
-                    <nav aria-label="Filter kategori" className="mb-8">
-                        <ul className="flex flex-wrap gap-2">
+                    <nav aria-label="Filter kategori" className="mb-10">
+                        <ul className="flex flex-wrap justify-center gap-2 text-sm">
                             <li>
                                 <Link
                                     href={postsIndex()}
@@ -65,10 +53,10 @@ export default function BeritaIndex({
                                             : undefined
                                     }
                                     className={cn(
-                                        'inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors',
+                                        'inline-block px-3 py-1 font-medium lowercase transition',
                                         activeCategory === null
-                                            ? 'bg-brand text-white'
-                                            : 'bg-mist text-charcoal hover:text-onyx',
+                                            ? 'bg-aw-primary text-white'
+                                            : 'bg-gray-100 text-aw-muted hover:text-aw-primary dark:bg-slate-700 dark:text-slate-300',
                                     )}
                                 >
                                     Semua
@@ -86,11 +74,11 @@ export default function BeritaIndex({
                                                 : undefined
                                         }
                                         className={cn(
-                                            'inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors',
+                                            'inline-block px-3 py-1 font-medium lowercase transition',
                                             activeCategory?.slug ===
                                                 category.slug
-                                                ? 'bg-brand text-white'
-                                                : 'bg-mist text-charcoal hover:text-onyx',
+                                                ? 'bg-aw-primary text-white'
+                                                : 'bg-gray-100 text-aw-muted hover:text-aw-primary dark:bg-slate-700 dark:text-slate-300',
                                         )}
                                     >
                                         {category.name}
@@ -102,18 +90,18 @@ export default function BeritaIndex({
                 )}
 
                 {posts.data.length === 0 ? (
-                    /* FR4-9: an empty state that explains itself, not a blank page. */
-                    <div className="rounded-xl border border-dashed border-charcoal/25 px-6 py-14 text-center">
+                    /* An empty state that explains itself, not a blank page. */
+                    <div className="mx-auto max-w-xl rounded-md border border-dashed border-gray-300 px-6 py-14 text-center dark:border-gray-700">
                         <Newspaper
-                            className="mx-auto size-8 text-brand/40"
+                            className="mx-auto size-8 text-aw-muted"
                             aria-hidden="true"
                         />
 
-                        <p className="mt-4 font-display text-xl font-semibold text-onyx">
+                        <p className="mt-4 font-heading text-xl font-bold">
                             Belum ada berita di sini
                         </p>
 
-                        <p className="mt-2 text-[15px] text-charcoal">
+                        <p className="mt-2 text-aw-muted">
                             {activeCategory === null
                                 ? 'Kabar terbaru akan tampil begitu diterbitkan.'
                                 : 'Kategori ini belum memiliki berita terbit.'}
@@ -122,14 +110,14 @@ export default function BeritaIndex({
                         {activeCategory !== null && (
                             <Link
                                 href={postsIndex()}
-                                className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-brand hover:text-brand-accent"
+                                className={buttonClasses('tertiary', 'mt-5')}
                             >
                                 Lihat semua berita
                             </Link>
                         )}
                     </div>
                 ) : (
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="-mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {posts.data.map((post, index) => (
                             <NewsCard
                                 key={post.id}
@@ -141,7 +129,7 @@ export default function BeritaIndex({
                 )}
 
                 <Pagination links={posts.links} lastPage={posts.last_page} />
-            </div>
+            </WidgetWrapper>
         </PublicLayout>
     );
 }

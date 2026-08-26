@@ -2,11 +2,12 @@ import { usePage } from '@inertiajs/react';
 import { CheckCircle2, TriangleAlert, X } from 'lucide-react';
 import { useState } from 'react';
 
-import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import type { Flash } from '@/types';
 
 /**
- * The toast from prd-05 §5, fed by the `flash` shared prop.
+ * The toast fed by the `flash` shared prop.
  *
  * Rendered in the admin layout so every redirect-with-message lands somewhere,
  * and announced through a live region — a save that only changes colour is
@@ -29,26 +30,23 @@ export default function FlashToast() {
     const Icon = isError ? TriangleAlert : CheckCircle2;
 
     return (
-        <div
+        <Alert
             role={isError ? 'alert' : 'status'}
-            className={cn(
-                'mb-6 flex items-start gap-3 rounded-xl border-l-4 p-4 text-sm',
-                isError
-                    ? 'border-red-600 bg-red-50 text-red-900'
-                    : 'border-brand bg-mist text-onyx',
-            )}
+            variant={isError ? 'destructive' : 'default'}
         >
-            <Icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <p className="flex-1">{message}</p>
+            <Icon />
+            <AlertDescription className="pr-8">{message}</AlertDescription>
 
-            <button
+            <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setDismissed(flash)}
                 aria-label="Tutup pesan"
-                className="-m-2 inline-flex size-11 items-center justify-center rounded-lg hover:bg-black/5"
+                className="absolute top-1.5 right-1.5 size-7"
             >
-                <X className="size-4" aria-hidden="true" />
-            </button>
-        </div>
+                <X aria-hidden="true" />
+            </Button>
+        </Alert>
     );
 }

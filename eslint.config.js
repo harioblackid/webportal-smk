@@ -106,6 +106,17 @@ export default [
         },
     },
     {
+        // Playwright specs and its config run in Node, not the browser: they read
+        // process.env and import from 'node:*'. Without this they fail no-undef
+        // under the repo-wide `eslint .`, which format.php turns into a hard block.
+        files: ['tests/e2e/**/*.ts', 'playwright.config.ts'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
         ignores: [
             '.claude',
             'vendor',

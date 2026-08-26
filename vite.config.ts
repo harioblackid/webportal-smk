@@ -12,16 +12,16 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
-            // prd-03 §1.4: Fraunces for display, Plus Jakarta Sans for body/UI.
-            // Self-hosted by the plugin, so no third-party request on first paint.
+            // Inter is AstroWind's typeface (public site); Instrument Sans is
+            // the Laravel starter kit's (admin + auth). Self-hosted by the
+            // plugin, so no third-party request on first paint.
             fonts: [
-                google('Fraunces', {
-                    alias: 'fraunces',
-                    weights: [400, 600],
-                }),
-                google('Plus Jakarta Sans', {
-                    alias: 'jakarta',
+                google('Inter', {
+                    alias: 'inter',
                     weights: [400, 500, 600, 700],
+                }),
+                google('Instrument Sans', {
+                    weights: [400, 500, 600],
                 }),
             ],
         }),

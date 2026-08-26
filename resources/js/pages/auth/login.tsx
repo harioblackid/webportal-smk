@@ -1,9 +1,13 @@
-import { Link, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
-import Button from '@/components/ui/button';
-import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
+import InputError from '@/components/input-error';
+import TextLink from '@/components/text-link';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { login } from '@/routes';
 import { request } from '@/routes/password';
@@ -32,83 +36,84 @@ export default function Login({ canResetPassword, status }: LoginProps) {
             title="Masuk"
             description="Gunakan email dan kata sandi akun admin sekolah."
         >
-            {status ? (
-                <p
-                    role="status"
-                    className="mb-4 rounded-lg border-l-4 border-brand bg-mist p-3 text-sm text-onyx"
-                >
-                    {status}
-                </p>
-            ) : null}
+            <form onSubmit={submit} className="flex flex-col gap-6">
+                <div className="grid gap-6">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            autoComplete="username"
+                            required
+                            autoFocus
+                            placeholder="email@sekolah.sch.id"
+                            aria-invalid={Boolean(form.errors.email)}
+                            value={form.data.email}
+                            onChange={(event) =>
+                                form.setData('email', event.target.value)
+                            }
+                        />
+                        <InputError message={form.errors.email} />
+                    </div>
 
-            <form onSubmit={submit} className="space-y-5">
-                <Field id="email" label="Email" error={form.errors.email}>
-                    <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="username"
-                        required
-                        autoFocus
-                        invalid={Boolean(form.errors.email)}
-                        value={form.data.email}
-                        onChange={(event) =>
-                            form.setData('email', event.target.value)
-                        }
-                    />
-                </Field>
+                    <div className="grid gap-2">
+                        <div className="flex items-center">
+                            <Label htmlFor="password">Kata sandi</Label>
 
-                <Field
-                    id="password"
-                    label="Kata sandi"
-                    error={form.errors.password}
-                >
-                    <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autoComplete="current-password"
-                        required
-                        invalid={Boolean(form.errors.password)}
-                        value={form.data.password}
-                        onChange={(event) =>
-                            form.setData('password', event.target.value)
-                        }
-                    />
-                </Field>
+                            {canResetPassword && (
+                                <TextLink
+                                    href={request()}
+                                    className="ml-auto text-sm"
+                                >
+                                    Lupa kata sandi?
+                                </TextLink>
+                            )}
+                        </div>
 
-                <label className="flex min-h-11 items-center gap-2 text-sm">
-                    <input
-                        type="checkbox"
-                        name="remember"
-                        className="size-4 accent-brand"
-                        checked={form.data.remember}
-                        onChange={(event) =>
-                            form.setData('remember', event.target.checked)
-                        }
-                    />
-                    <span className="text-charcoal">Ingat saya</span>
-                </label>
+                        <Input
+                            id="password"
+                            name="password"
+                            type="password"
+                            autoComplete="current-password"
+                            required
+                            aria-invalid={Boolean(form.errors.password)}
+                            value={form.data.password}
+                            onChange={(event) =>
+                                form.setData('password', event.target.value)
+                            }
+                        />
+                        <InputError message={form.errors.password} />
+                    </div>
 
-                <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={form.processing}
-                >
-                    {form.processing ? 'Memproses…' : 'Masuk'}
-                </Button>
+                    <div className="flex items-center space-x-3">
+                        <Checkbox
+                            id="remember"
+                            name="remember"
+                            checked={form.data.remember}
+                            onCheckedChange={(checked) =>
+                                form.setData('remember', checked === true)
+                            }
+                        />
+                        <Label htmlFor="remember">Ingat saya</Label>
+                    </div>
 
-                {canResetPassword ? (
-                    <p className="text-center text-sm">
-                        <Link
-                            href={request()}
-                            className="font-medium text-brand underline underline-offset-4 hover:text-brand-accent"
-                        >
-                            Lupa kata sandi?
-                        </Link>
-                    </p>
-                ) : null}
+                    <Button
+                        type="submit"
+                        className="mt-4 w-full"
+                        disabled={form.processing}
+                    >
+                        {form.processing && <Spinner />}
+                        Masuk
+                    </Button>
+                </div>
             </form>
+
+            {status && (
+                <div className="text-center text-sm font-medium text-green-600">
+                    {status}
+                </div>
+            )}
         </AuthLayout>
     );
 }

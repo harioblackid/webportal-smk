@@ -5,9 +5,9 @@ import { useState } from 'react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
 import Modal from '@/components/admin/modal';
-import Button from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     destroy as destroyCategory,
@@ -57,9 +57,9 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
         <AdminLayout title="Kategori">
             <form
                 onSubmit={create}
-                className="max-w-2xl space-y-4 rounded-xl border border-charcoal/15 p-5"
+                className="max-w-2xl space-y-4 rounded-xl border border-border p-5"
             >
-                <h2 className="font-display text-lg font-semibold text-onyx">
+                <h2 className="text-lg font-semibold text-foreground">
                     Tambah kategori
                 </h2>
 
@@ -72,7 +72,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                         <Input
                             id="name"
                             required
-                            invalid={Boolean(createForm.errors.name)}
+                            aria-invalid={Boolean(createForm.errors.name)}
                             value={createForm.data.name}
                             onChange={(event) =>
                                 createForm.setData('name', event.target.value)
@@ -88,7 +88,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                         <Input
                             id="slug"
                             placeholder="otomatis dari nama"
-                            invalid={Boolean(createForm.errors.slug)}
+                            aria-invalid={Boolean(createForm.errors.slug)}
                             value={createForm.data.slug}
                             onChange={(event) =>
                                 createForm.setData('slug', event.target.value)
@@ -104,14 +104,14 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
             </form>
 
             {categories.length === 0 ? (
-                <p className="mt-6 text-sm text-charcoal">
+                <p className="mt-6 text-sm text-muted-foreground">
                     Belum ada kategori.
                 </p>
             ) : (
                 <div className="mt-8 overflow-x-auto">
                     <table className="w-full border-collapse text-left text-sm">
                         <thead>
-                            <tr className="border-b border-charcoal/20">
+                            <tr className="border-b border-border">
                                 <th
                                     scope="col"
                                     className="py-2 pr-4 font-semibold"
@@ -139,15 +139,15 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                             {categories.map((category) => (
                                 <tr
                                     key={category.id}
-                                    className="border-b border-charcoal/10"
+                                    className="border-b border-border"
                                 >
-                                    <td className="py-2 pr-4 font-medium text-onyx">
+                                    <td className="py-2 pr-4 font-medium text-foreground">
                                         {category.name}
                                     </td>
-                                    <td className="py-2 pr-4 text-charcoal">
+                                    <td className="py-2 pr-4 text-muted-foreground">
                                         {category.slug}
                                     </td>
-                                    <td className="py-2 pr-4 text-charcoal">
+                                    <td className="py-2 pr-4 text-muted-foreground">
                                         {category.postsCount}
                                     </td>
                                     <td className="py-2">
@@ -158,7 +158,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                                                     openEdit(category)
                                                 }
                                                 aria-label={`Edit ${category.name}`}
-                                                className="inline-flex size-11 items-center justify-center rounded-lg text-charcoal hover:bg-mist hover:text-onyx"
+                                                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                             >
                                                 <Pencil
                                                     className="size-4"
@@ -167,7 +167,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                                             </button>
 
                                             {category.postsCount > 0 ? (
-                                                <span className="text-xs text-charcoal">
+                                                <span className="text-xs text-muted-foreground">
                                                     Dipakai — tidak bisa dihapus
                                                 </span>
                                             ) : (
@@ -202,7 +202,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                         <Input
                             id="edit-name"
                             required
-                            invalid={Boolean(editForm.errors.name)}
+                            aria-invalid={Boolean(editForm.errors.name)}
                             value={editForm.data.name}
                             onChange={(event) =>
                                 editForm.setData('name', event.target.value)
@@ -217,7 +217,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
                     >
                         <Input
                             id="edit-slug"
-                            invalid={Boolean(editForm.errors.slug)}
+                            aria-invalid={Boolean(editForm.errors.slug)}
                             value={editForm.data.slug}
                             onChange={(event) =>
                                 editForm.setData('slug', event.target.value)
@@ -227,7 +227,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexProps) {
 
                     <div className="flex flex-wrap justify-end gap-3">
                         <Button
-                            variant="secondary"
+                            variant="outline"
                             onClick={() => setEditing(null)}
                         >
                             Batal

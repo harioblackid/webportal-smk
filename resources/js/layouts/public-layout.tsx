@@ -2,8 +2,8 @@ import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
 import Footer from '@/components/public/footer';
+import Header from '@/components/public/header';
 import JsonLd from '@/components/public/json-ld';
-import Navbar from '@/components/public/navbar';
 import SeoHead from '@/components/public/seo-head';
 import type { Seo } from '@/types';
 
@@ -13,28 +13,33 @@ type PublicLayoutProps = {
 };
 
 /**
- * The shell every public page renders inside: metadata, the landmark
- * structure AD-2 asks for, and the shared navbar/footer.
+ * AstroWind's PageLayout: metadata, the landmark structure, and the shared
+ * header/footer.
+ *
+ * `font-aw` and the page colours are set here rather than on <body>, so the
+ * admin area keeps the starter kit's own typeface and shadcn tokens.
  */
 export default function PublicLayout({ seo, children }: PublicLayoutProps) {
     const site = usePage().props.site;
 
     return (
-        <>
+        <div className="flex min-h-screen flex-col bg-page font-aw text-aw-default antialiased">
             <SeoHead seo={seo} />
 
-            {/* FR6-11: the organisation node rides along on every public page. */}
+            {/* The organisation node rides along on every public page. */}
             <JsonLd data={site.organization} />
 
             <a href="#konten" className="skip-link">
                 Lewati ke konten utama
             </a>
 
-            <Navbar />
+            <Header />
 
-            <main id="konten">{children}</main>
+            <main id="konten" className="flex-1">
+                {children}
+            </main>
 
             <Footer />
-        </>
+        </div>
     );
 }

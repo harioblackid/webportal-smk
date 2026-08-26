@@ -1,9 +1,11 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
-import Button from '@/components/ui/button';
-import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { store } from '@/routes/password';
 
@@ -32,71 +34,78 @@ export default function ResetPassword({ email, token }: ResetPasswordProps) {
             title="Atur kata sandi baru"
             description="Pilih kata sandi baru untuk akun Anda."
         >
-            <form onSubmit={submit} className="space-y-5">
-                <Field id="email" label="Email" error={form.errors.email}>
-                    <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="username"
-                        required
-                        invalid={Boolean(form.errors.email)}
-                        value={form.data.email}
-                        onChange={(event) =>
-                            form.setData('email', event.target.value)
-                        }
-                    />
-                </Field>
+            <form onSubmit={submit} className="flex flex-col gap-6">
+                <div className="grid gap-6">
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            autoComplete="username"
+                            required
+                            aria-invalid={Boolean(form.errors.email)}
+                            value={form.data.email}
+                            onChange={(event) =>
+                                form.setData('email', event.target.value)
+                            }
+                        />
+                        <InputError message={form.errors.email} />
+                    </div>
 
-                <Field
-                    id="password"
-                    label="Kata sandi baru"
-                    error={form.errors.password}
-                >
-                    <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autoComplete="new-password"
-                        required
-                        autoFocus
-                        invalid={Boolean(form.errors.password)}
-                        value={form.data.password}
-                        onChange={(event) =>
-                            form.setData('password', event.target.value)
-                        }
-                    />
-                </Field>
+                    <div className="grid gap-2">
+                        <Label htmlFor="password">Kata sandi baru</Label>
+                        <Input
+                            id="password"
+                            name="password"
+                            type="password"
+                            autoComplete="new-password"
+                            required
+                            autoFocus
+                            aria-invalid={Boolean(form.errors.password)}
+                            value={form.data.password}
+                            onChange={(event) =>
+                                form.setData('password', event.target.value)
+                            }
+                        />
+                        <InputError message={form.errors.password} />
+                    </div>
 
-                <Field
-                    id="password_confirmation"
-                    label="Ulangi kata sandi baru"
-                    error={form.errors.password_confirmation}
-                >
-                    <Input
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        type="password"
-                        autoComplete="new-password"
-                        required
-                        invalid={Boolean(form.errors.password_confirmation)}
-                        value={form.data.password_confirmation}
-                        onChange={(event) =>
-                            form.setData(
-                                'password_confirmation',
-                                event.target.value,
-                            )
-                        }
-                    />
-                </Field>
+                    <div className="grid gap-2">
+                        <Label htmlFor="password_confirmation">
+                            Ulangi kata sandi baru
+                        </Label>
+                        <Input
+                            id="password_confirmation"
+                            name="password_confirmation"
+                            type="password"
+                            autoComplete="new-password"
+                            required
+                            aria-invalid={Boolean(
+                                form.errors.password_confirmation,
+                            )}
+                            value={form.data.password_confirmation}
+                            onChange={(event) =>
+                                form.setData(
+                                    'password_confirmation',
+                                    event.target.value,
+                                )
+                            }
+                        />
+                        <InputError
+                            message={form.errors.password_confirmation}
+                        />
+                    </div>
 
-                <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={form.processing}
-                >
-                    {form.processing ? 'Menyimpan…' : 'Simpan kata sandi'}
-                </Button>
+                    <Button
+                        type="submit"
+                        className="mt-4 w-full"
+                        disabled={form.processing}
+                    >
+                        {form.processing && <Spinner />}
+                        Simpan kata sandi
+                    </Button>
+                </div>
             </form>
         </AuthLayout>
     );

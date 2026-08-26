@@ -2,7 +2,8 @@ import { Link } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
-import { buttonClasses } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     create as createMajor,
@@ -26,24 +27,26 @@ export default function MajorsIndex({ majors }: MajorsIndexProps) {
         <AdminLayout
             title="Jurusan"
             actions={
-                <Link href={createMajor()} className={buttonClasses()}>
+                <Link href={createMajor()} className={buttonVariants()}>
                     <Plus className="size-4" aria-hidden="true" />
                     Tambah jurusan
                 </Link>
             }
         >
-            <p className="text-sm text-charcoal">
+            <p className="text-sm text-muted-foreground">
                 Hanya jurusan berstatus aktif yang tampil di halaman /jurusan,
                 diurutkan menurut kolom urutan.
             </p>
 
             {majors.length === 0 ? (
-                <p className="mt-6 text-sm text-charcoal">Belum ada jurusan.</p>
+                <p className="mt-6 text-sm text-muted-foreground">
+                    Belum ada jurusan.
+                </p>
             ) : (
                 <div className="mt-6 overflow-x-auto">
                     <table className="w-full border-collapse text-left text-sm">
                         <thead>
-                            <tr className="border-b border-charcoal/20">
+                            <tr className="border-b border-border">
                                 <th
                                     scope="col"
                                     className="py-2 pr-4 font-semibold"
@@ -71,15 +74,15 @@ export default function MajorsIndex({ majors }: MajorsIndexProps) {
                             {majors.map((major) => (
                                 <tr
                                     key={major.id}
-                                    className="border-b border-charcoal/10"
+                                    className="border-b border-border"
                                 >
-                                    <td className="py-2 pr-4 text-charcoal">
+                                    <td className="py-2 pr-4 text-muted-foreground">
                                         {major.sortOrder}
                                     </td>
                                     <td className="py-2 pr-4">
                                         <div className="flex items-center gap-3">
                                             {major.thumbUrl === null ? (
-                                                <div className="size-10 shrink-0 rounded-lg bg-mist" />
+                                                <div className="size-10 shrink-0 rounded-lg bg-muted" />
                                             ) : (
                                                 <img
                                                     src={major.thumbUrl}
@@ -91,35 +94,35 @@ export default function MajorsIndex({ majors }: MajorsIndexProps) {
                                             <span>
                                                 <Link
                                                     href={editMajor(major.slug)}
-                                                    className="font-medium text-onyx underline-offset-4 hover:underline"
+                                                    className="font-medium text-foreground underline-offset-4 hover:underline"
                                                 >
                                                     {major.name}
                                                 </Link>
-                                                <span className="block text-xs text-charcoal">
+                                                <span className="block text-xs text-muted-foreground">
                                                     /jurusan/{major.slug}
                                                 </span>
                                             </span>
                                         </div>
                                     </td>
                                     <td className="py-2 pr-4">
-                                        <span
-                                            className={
+                                        <Badge
+                                            variant={
                                                 major.isActive
-                                                    ? 'inline-block rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand'
-                                                    : 'inline-block rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-charcoal'
+                                                    ? 'default'
+                                                    : 'secondary'
                                             }
                                         >
                                             {major.isActive
                                                 ? 'Aktif'
                                                 : 'Nonaktif'}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td className="py-2">
                                         <div className="flex items-center justify-end gap-1">
                                             <Link
                                                 href={editMajor(major.slug)}
                                                 aria-label={`Edit ${major.name}`}
-                                                className="inline-flex size-11 items-center justify-center rounded-lg text-charcoal hover:bg-mist hover:text-onyx"
+                                                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                             >
                                                 <Pencil
                                                     className="size-4"

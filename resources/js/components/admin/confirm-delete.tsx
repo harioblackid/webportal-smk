@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import Modal from '@/components/admin/modal';
-import Button from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 type ConfirmDeleteProps = {
     /** The DELETE endpoint, from the Wayfinder route helper. */
@@ -48,21 +48,19 @@ export default function ConfirmDelete({
     return (
         <>
             {variant === 'icon' ? (
-                <button
+                <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setOpen(true)}
                     aria-label={`Hapus ${label}`}
-                    className="inline-flex size-11 items-center justify-center rounded-lg text-charcoal hover:bg-red-50 hover:text-red-700"
+                    className="text-muted-foreground hover:text-destructive"
                 >
-                    <Trash2 className="size-4" aria-hidden="true" />
-                </button>
+                    <Trash2 aria-hidden="true" />
+                </Button>
             ) : (
-                <Button
-                    variant="secondary"
-                    onClick={() => setOpen(true)}
-                    className="border-red-600 text-red-700 hover:bg-red-700 active:border-red-800 active:bg-red-800"
-                >
-                    <Trash2 className="size-4" aria-hidden="true" />
+                <Button variant="destructive" onClick={() => setOpen(true)}>
+                    <Trash2 aria-hidden="true" />
                     Hapus
                 </Button>
             )}
@@ -78,7 +76,7 @@ export default function ConfirmDelete({
             >
                 <div className="flex flex-wrap justify-end gap-3">
                     <Button
-                        variant="secondary"
+                        variant="outline"
                         onClick={() => setOpen(false)}
                         disabled={processing}
                     >
@@ -86,9 +84,9 @@ export default function ConfirmDelete({
                     </Button>
 
                     <Button
+                        variant="destructive"
                         onClick={destroy}
                         disabled={processing}
-                        className="bg-red-700 hover:bg-red-800 active:bg-red-900"
                     >
                         {processing ? 'Menghapus…' : 'Ya, hapus'}
                     </Button>

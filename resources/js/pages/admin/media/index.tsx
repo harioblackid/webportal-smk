@@ -4,10 +4,10 @@ import { useState } from 'react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
 import Modal from '@/components/admin/modal';
-import Pagination from '@/components/public/pagination';
-import Button from '@/components/ui/button';
+import Pagination from '@/components/admin/pagination';
+import { Button, buttonVariants } from '@/components/ui/button';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     destroy as destroyMedia,
@@ -67,9 +67,9 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
         <AdminLayout title="Media">
             <form
                 onSubmit={upload}
-                className="max-w-2xl space-y-4 rounded-xl border border-charcoal/15 p-5"
+                className="max-w-2xl space-y-4 rounded-xl border border-border p-5"
             >
-                <h2 className="font-display text-lg font-semibold text-onyx">
+                <h2 className="text-lg font-semibold text-foreground">
                     Unggah gambar
                 </h2>
 
@@ -80,9 +80,9 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
                         required
                         accept="image/jpeg,image/png,image/webp"
                         onChange={chooseFile}
-                        className="block w-full text-sm text-charcoal file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-mist file:px-4 file:text-sm file:font-semibold file:text-onyx"
+                        className="block w-full text-sm text-muted-foreground file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-muted file:px-4 file:text-sm file:font-semibold file:text-foreground"
                     />
-                    <p className="text-sm text-charcoal">
+                    <p className="text-sm text-muted-foreground">
                         JPG, PNG, atau WebP — maksimal {maxLabel}. Versi tampil
                         dan thumbnail dibuat otomatis.
                     </p>
@@ -97,13 +97,13 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
                         id="alt"
                         maxLength={200}
                         placeholder="mis. Siswa TKJ sedang praktik jaringan"
-                        invalid={Boolean(uploadForm.errors.alt)}
+                        aria-invalid={Boolean(uploadForm.errors.alt)}
                         value={uploadForm.data.alt}
                         onChange={(event) =>
                             uploadForm.setData('alt', event.target.value)
                         }
                     />
-                    <p className="text-sm text-charcoal">
+                    <p className="text-sm text-muted-foreground">
                         Menjelaskan isi gambar untuk pembaca layar dan mesin
                         pencari. Kosongkan hanya untuk gambar dekoratif.
                     </p>
@@ -115,7 +115,7 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
             </form>
 
             {media.data.length === 0 ? (
-                <p className="mt-6 text-sm text-charcoal">
+                <p className="mt-6 text-sm text-muted-foreground">
                     Belum ada gambar di pustaka.
                 </p>
             ) : (
@@ -123,23 +123,23 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
                     {media.data.map((item) => (
                         <li
                             key={item.id}
-                            className="overflow-hidden rounded-xl border border-charcoal/15"
+                            className="overflow-hidden rounded-xl border border-border"
                         >
                             <img
                                 src={item.thumbUrl}
                                 alt={item.alt}
-                                className="aspect-square w-full bg-mist object-cover"
+                                className="aspect-square w-full bg-muted object-cover"
                             />
 
                             <div className="space-y-1 p-3">
-                                <p className="truncate text-sm font-medium text-onyx">
+                                <p className="truncate text-sm font-medium text-foreground">
                                     {item.filename}
                                 </p>
-                                <p className="text-xs text-charcoal">
+                                <p className="text-xs text-muted-foreground">
                                     {item.sizeLabel} ·{' '}
                                     {item.uploadedAtLabel ?? '—'}
                                 </p>
-                                <p className="text-xs text-charcoal">
+                                <p className="text-xs text-muted-foreground">
                                     {item.alt === ''
                                         ? 'Tanpa alt text'
                                         : item.alt}
@@ -149,7 +149,10 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
                                     <button
                                         type="button"
                                         onClick={() => openAlt(item)}
-                                        className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-brand hover:bg-mist"
+                                        className={buttonVariants({
+                                            variant: 'link',
+                                            size: 'sm',
+                                        })}
                                     >
                                         Ubah alt
                                     </button>
@@ -188,7 +191,7 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
                         <Input
                             id="edit-alt"
                             maxLength={200}
-                            invalid={Boolean(altForm.errors.alt)}
+                            aria-invalid={Boolean(altForm.errors.alt)}
                             value={altForm.data.alt}
                             onChange={(event) =>
                                 altForm.setData('alt', event.target.value)
@@ -198,7 +201,7 @@ export default function MediaIndex({ media, maxKilobytes }: MediaIndexProps) {
 
                     <div className="flex flex-wrap justify-end gap-3">
                         <Button
-                            variant="secondary"
+                            variant="outline"
                             onClick={() => setEditing(null)}
                         >
                             Batal

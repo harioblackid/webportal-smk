@@ -51,6 +51,9 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            // The admin sidebar remembers whether it was collapsed; the starter
+            // kit's <SidebarProvider> reads this as its defaultOpen.
+            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
 }

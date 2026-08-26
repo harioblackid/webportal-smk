@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Web portal for SMK PGRI Telagasari (`smkpgritelagasari.sch.id`) — a public school site plus an
-admin CMS. The repository is currently the unmodified Laravel React starter kit: the domain
-application (public pages, CMS, data model) has not been built yet.
+admin CMS. The domain application is built: the public pages, the CMS under `/admin`, and the data
+model all exist — this is no longer the bare starter kit.
 
 The full specification lives in `prd/` (8 numbered Indonesian-language documents, `prd-00-index.md`
 first). **`prd/` is gitignored** — it exists locally only, so it will not appear in diffs or on a
@@ -28,7 +28,10 @@ npm run lint          # eslint --fix
 npm run format        # prettier --write resources/
 npm run types:check   # tsc --noEmit
 npm run build         # vite build
-npm run build:ssr     # vite build + SSR build (no SSR entrypoint exists yet — see below)
+npm run build:ssr     # vite build + SSR build (entrypoint: resources/js/ssr.tsx)
+npm run test:e2e      # Playwright, all browsers except the perf project
+npm run test:e2e:perf # Core Web Vitals, run alone so timing means something
+npm run test:e2e:ui   # Playwright UI mode
 ```
 
 Single test:
@@ -96,6 +99,48 @@ every feature test migrates a real schema. `phpunit.xml` points the suite at the
 sync queue. The test database is migrated and rolled back per test — never point it at
 `laravel_portal`.
 
+`INERTIA_SSR_ENABLED=false` in `phpunit.xml` is a performance switch, not a preference: with SSR
+on and no SSR process listening, every Inertia response in the suite pays a refused connection to
+port 13714. Turning it off took the suite from ~171s to ~13s.
+
+### Browser tests (`tests/e2e/`, Playwright)
+
+Two layers, because the full matrix does not pay for itself:
+
+- **`cross/`** runs on Chrome, Firefox, Safari (WebKit), Edge, plus Pixel 5 and iPhone 12. It hunts
+  rendering and hydration faults — the things that actually differ between engines. `smoke.spec.ts`
+  fails on any console error, uncaught exception, or failed same-origin request; `responsive.spec.ts`
+  asserts zero horizontal overflow at 360/768/1280 and exercises the mobile menu and theme toggle;
+  `seo.spec.ts` asserts on **raw HTML via `request.get()`**, because a browser context cannot tell
+  SSR from CSR — after hydration the DOM is identical either way.
+- **`deep/`** runs on Chromium only: admin CRUD and the Core Web Vitals probes are not
+  engine-specific, and the performance APIs exist nowhere else.
+
+`npm run test:e2e` runs everything except the perf project; `npm run test:e2e:perf` runs that one
+alone with a single worker, because timing sampled while five browsers compete measures the machine,
+not the page.
+
+Two gotchas worth knowing:
+
+- Workers are capped at 4. `php artisan serve` is PHP's built-in server and handles **one request at
+  a time** (`PHP_CLI_SERVER_WORKERS` is Unix-only), so an unbounded matrix saturates it and produces
+  timeout failures that look exactly like real UI faults.
+- A stale `public/hot`, left behind when `npm run dev` is killed, makes `Vite::isRunningHot()` true.
+  Inertia then posts pages to the Vite hot endpoint instead of the SSR port, nothing answers, and
+  **every public page silently degrades to CSR while looking perfectly healthy**. Delete the file.
+
+### Demo fixture
+
+`php artisan demo:images` caches ~22 school photos from Pexels (free for commercial use, no
+attribution required) into `storage/app/private/demo-images/`, then `php artisan db:seed
+--class=DemoSeeder` pushes them through the real `ImageProcessor` so the rows are indistinguishable
+from genuine uploads. It is idempotent, is never called by `DatabaseSeeder`, and marks everything it
+creates with a `demo-` prefix (accounts live on `@demo.test`).
+
+`php artisan demo:clear` removes all of it and restores the pre-seed references from the snapshot at
+`storage/app/private/demo-images/.original-refs.json`. **These are stock photos of other schools —
+test material, not release content.** Real photos must replace them before the site goes live.
+
 ## Locked product decisions
 
 From the brief in `prd-00-index.md`; do not re-litigate these without being asked:
@@ -106,10 +151,9 @@ From the brief in `prd-00-index.md`; do not re-litigate these without being aske
 - CMS-managed: Hero, Berita/Pengumuman, Jurusan. Profil and Kontak are static pages in code.
 - Bilingual ID/EN for UI labels only; content stays Indonesian.
 - Mobile-first (~80% mobile traffic). Targets: LCP < 2.5s, CLS < 0.1, Lighthouse mobile ≥ 90.
-- Design system is locked in `prd-03`: **no purple/violet/indigo/fuchsia**, **no
-  Inter/Roboto/Arial/Helvetica/system-ui**, no emoji used as icons. `prd-03 §7` is a self-audit to
-  run before calling any UI work done. (The starter's current `welcome.tsx` and the Instrument Sans
-  font in `vite.config.ts` predate this and will be replaced.)
+- **The `prd-03` design system has been superseded** — see "Design systems" below. Its palette
+  (`--green` / `--lime-moss`), its typefaces (Fraunces / Plus Jakarta Sans), and its §7 self-audit
+  no longer apply.
 - **Deployment runs only on explicit instruction from the school** (`FR8-4`). Never run the release
   sequence (`git pull` → build SSR → `migrate --force` → caches → restart SSR, `FR8-13`)
   proactively. Infrastructure — VPS, CloudPanel, DNS, SSL — is the school's responsibility.
@@ -126,14 +170,46 @@ From the brief in `prd-00-index.md`; do not re-litigate these without being aske
 - **Skills**: `/story <ID>` works a PRD requirement end to end against its acceptance checkboxes;
   `/inertia-page` scaffolds route + controller + page + test with the component name threaded
   through all four.
-- **Agents**: `authz-reviewer` (server-side role enforcement, `FR5-2`), `design-audit` (`prd-03 §7`).
+- **Agents**: `authz-reviewer` (server-side role enforcement, `FR5-2`), `design-audit` — the latter
+  audits against the retired `prd-03 §7` rules and is therefore stale.
+
+## Design systems
+
+Two of them, deliberately, namespaced apart in `resources/css/app.css`:
+
+- **Public site → the AstroWind template** (`github.com/arthelokyo/astrowind`). The palette is the
+  `--aw-*` custom properties, surfaced as `aw-`-prefixed Tailwind colours (`bg-aw-primary`,
+  `text-aw-muted`), plus the `btn` / `btn-primary` / `btn-secondary` / `btn-tertiary` utilities and
+  the `bg-page` / `bg-dark` / `text-page` surfaces. Typeface is Inter (`font-aw`, `font-heading`).
+  The Astro widgets are ported to React under `resources/js/components/public/`: `hero`,
+  `hero-text`, `features`, `stats`, `content`, `steps` / `timeline`, `call-to-action`,
+  `widget-wrapper`, `headline`, `header`, `footer`. Long-form CMS copy renders through
+  `@tailwindcss/typography` (`prose`), not a bespoke class.
+- **Admin + auth → the Laravel React starter kit** (`github.com/laravel/react-starter-kit`), i.e.
+  stock shadcn/ui: the `--background` / `--primary` / `--sidebar` oklch tokens, Instrument Sans, and
+  the collapsible sidebar shell (`app-shell` → `app-sidebar` → `app-content`). Everything in
+  `resources/js/components/ui/` is a verbatim starter-kit copy — restyle by composing those, not by
+  editing them.
+
+AstroWind's `primary` / `secondary` / `accent` / `muted` would collide with shadcn's, which mean
+something else entirely; that is why the public palette carries the `aw-` prefix.
+`tests/Feature/FoundationTest.php` pins both systems so an edit to one cannot quietly drop the other.
+
+Dark mode is class-driven (`.dark` on `<html>`) and shared by both areas:
+`resources/js/hooks/use-appearance.tsx` writes an `appearance` cookie plus localStorage,
+`HandleAppearance` republishes it to `app.blade.php`, and an inline script resolves `system` before
+first paint. The public toggle is `components/public/toggle-theme.tsx`; the admin one lives in the
+sidebar user menu. Both cookies (`appearance`, `sidebar_state`) are exempt from encryption because
+the browser reads them.
+
+`resources/js/ssr.tsx` must wrap the app in `TooltipProvider` exactly as `app.tsx` does — the
+sidebar renders Radix tooltips, and those throw during server rendering without it.
 
 ## Known gaps in the current scaffold
 
-- `npm run build:ssr` is wired but there is no `resources/js/ssr.tsx` entrypoint, and SSR is a hard
-  requirement (`prd-06`). It has to be created before public pages ship.
-- `.npmrc` sets `ignore-scripts=true`; packages needing postinstall steps won't run them.
+- `.npmrc` sets `ignore-scripts=true`; packages needing postinstall steps won't run them. This
+  bites Playwright specifically — its browser download is a postinstall, so
+  `npx playwright install chromium firefox webkit` has to be run by hand after `npm install`.
 - The three `playwright-test-*` agents in `.claude/agents/` call an `mcp__playwright-test__*` server
-  that is not configured anywhere, so they fail on first use. There is no Playwright suite either.
-  Pest 4 browser testing is the stack-native path; several `prd-06` stories end with "Verify in
-  browser using dev-browser skill" and need something wired up.
+  that is not configured anywhere, so they fail on first use. The suite in `tests/e2e/` does not use
+  them and does not need them — the agents are simply dead weight.

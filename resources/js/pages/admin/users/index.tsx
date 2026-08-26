@@ -2,7 +2,8 @@ import { Link, usePage } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
-import { buttonClasses } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     create as createUser,
@@ -26,13 +27,13 @@ export default function UsersIndex({ users }: UsersIndexProps) {
         <AdminLayout
             title="Pengguna"
             actions={
-                <Link href={createUser()} className={buttonClasses()}>
+                <Link href={createUser()} className={buttonVariants()}>
                     <Plus className="size-4" aria-hidden="true" />
                     Tambah akun
                 </Link>
             }
         >
-            <p className="text-sm text-charcoal">
+            <p className="text-sm text-muted-foreground">
                 Akun hanya dibuat dari halaman ini — situs tidak menyediakan
                 pendaftaran publik.
             </p>
@@ -40,7 +41,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
             <div className="mt-6 overflow-x-auto">
                 <table className="w-full border-collapse text-left text-sm">
                     <thead>
-                        <tr className="border-b border-charcoal/20">
+                        <tr className="border-b border-border">
                             <th scope="col" className="py-2 pr-4 font-semibold">
                                 Nama
                             </th>
@@ -70,25 +71,25 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                             return (
                                 <tr
                                     key={user.id}
-                                    className="border-b border-charcoal/10"
+                                    className="border-b border-border"
                                 >
                                     <td className="py-2 pr-4">
                                         <Link
                                             href={editUser(user.id)}
-                                            className="font-medium text-onyx underline-offset-4 hover:underline"
+                                            className="font-medium text-foreground underline-offset-4 hover:underline"
                                         >
                                             {user.name}
                                         </Link>
                                     </td>
-                                    <td className="py-2 pr-4 text-charcoal">
+                                    <td className="py-2 pr-4 text-muted-foreground">
                                         {user.email}
                                     </td>
                                     <td className="py-2 pr-4">
-                                        <span className="inline-block rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-onyx">
+                                        <Badge variant="secondary">
                                             {user.roleLabel}
-                                        </span>
+                                        </Badge>
                                     </td>
-                                    <td className="py-2 pr-4 whitespace-nowrap text-charcoal">
+                                    <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
                                         {user.createdAtLabel ?? '—'}
                                     </td>
                                     <td className="py-2">
@@ -96,7 +97,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                                             <Link
                                                 href={editUser(user.id)}
                                                 aria-label={`Edit ${user.name}`}
-                                                className="inline-flex size-11 items-center justify-center rounded-lg text-charcoal hover:bg-mist hover:text-onyx"
+                                                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                             >
                                                 <Pencil
                                                     className="size-4"
@@ -105,7 +106,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
                                             </Link>
 
                                             {isLastSuperadmin || isSelf ? (
-                                                <span className="text-xs text-charcoal">
+                                                <span className="text-xs text-muted-foreground">
                                                     {isSelf
                                                         ? 'Akun Anda'
                                                         : 'Superadmin terakhir'}

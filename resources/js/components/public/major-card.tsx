@@ -11,50 +11,44 @@ type MajorCardProps = {
     eager?: boolean;
 };
 
-/** FR4-16 — one program keahlian in the /jurusan grid. */
+/** One program keahlian in the /jurusan grid, on AstroWind's GridItem frame. */
 export default function MajorCard({
     major,
     className,
     eager = false,
 }: MajorCardProps) {
     return (
-        <article
-            className={cn(
-                'group relative flex flex-col overflow-hidden rounded-xl border border-charcoal/12 bg-white transition-shadow hover:shadow-lg hover:shadow-onyx/5',
-                className,
-            )}
-        >
+        <article className={cn('group relative mb-6 transition', className)}>
             <SiteImage
                 image={major.image}
                 ratio="aspect-[4/3]"
+                className="mb-6 rounded shadow-lg"
                 eager={eager}
                 thumb
             />
 
-            <div className="flex flex-1 flex-col p-4 sm:p-5">
-                <h3 className="font-display text-lg leading-snug font-semibold text-onyx sm:text-xl">
-                    <Link
-                        href={major.url}
-                        className="group-hover:text-brand after:absolute after:inset-0"
-                    >
-                        {major.name}
-                    </Link>
-                </h3>
+            <h3 className="mb-2 font-heading text-xl leading-tight font-bold sm:text-2xl dark:text-slate-300">
+                <Link
+                    href={major.url}
+                    className="inline-block transition duration-200 ease-in after:absolute after:inset-0 hover:text-aw-primary dark:hover:text-blue-700"
+                >
+                    {major.name}
+                </Link>
+            </h3>
 
-                {major.excerpt !== null && (
-                    <p className="mt-2 line-clamp-3 text-[15px] text-charcoal">
-                        {major.excerpt}
-                    </p>
-                )}
-
-                <p className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
-                    Pelajari jurusan
-                    <ArrowRight
-                        className="size-4 transition-transform group-hover:translate-x-0.5"
-                        aria-hidden="true"
-                    />
+            {major.excerpt !== null && (
+                <p className="line-clamp-3 text-lg text-aw-muted dark:text-slate-400">
+                    {major.excerpt}
                 </p>
-            </div>
+            )}
+
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-aw-primary">
+                Pelajari jurusan
+                <ArrowRight
+                    className="size-4 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                />
+            </p>
         </article>
     );
 }

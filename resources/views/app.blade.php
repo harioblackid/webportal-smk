@@ -1,9 +1,27 @@
 <!DOCTYPE html>
-{{-- No dark mode: OQ2-2 settled it as out of scope. --}}
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+{{-- The class attribute is emitted only when it has a value, so the tag stays
+     exactly `<html lang="id">` in the default (light / system) case. --}}
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"@if (($appearance ?? 'system') === 'dark') class="dark"@endif>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        {{-- Resolve "system" before the bundle loads, so the theme never flashes. --}}
+        <script>
+            (function () {
+                const appearance = '{{ $appearance ?? 'system' }}';
+
+                if (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+        </script>
+
+        {{-- The page background has to be painted before the CSS bundle arrives. --}}
+        <style>
+            html { background-color: #ffffff; }
+            html.dark { background-color: rgb(3 6 32); }
+        </style>
 
         {{-- D-4 / US-003: all three derive from prd/logo_smk_new.png. The
              Laravel starter's SVG icon is deleted on purpose — a browser

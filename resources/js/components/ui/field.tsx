@@ -1,30 +1,36 @@
 import type { ReactNode } from 'react';
 
+import InputError from '@/components/input-error';
+import { Label } from '@/components/ui/label';
+
 type FieldProps = {
     id: string;
     label: string;
     error?: string;
+    /** Explanatory copy shown under the label, before the control. */
+    hint?: string;
     children: ReactNode;
 };
 
 /** Label + control + error message, wired together for screen readers. */
-export default function Field({ id, label, error, children }: FieldProps) {
+export default function Field({
+    id,
+    label,
+    error,
+    hint,
+    children,
+}: FieldProps) {
     return (
-        <div className="space-y-1.5">
-            <label
-                htmlFor={id}
-                className="text-onyx block text-sm font-semibold"
-            >
-                {label}
-            </label>
+        <div className="grid gap-2">
+            <Label htmlFor={id}>{label}</Label>
+
+            {hint ? (
+                <p className="text-sm text-muted-foreground">{hint}</p>
+            ) : null}
 
             {children}
 
-            {error ? (
-                <p id={`${id}-error`} role="alert" className="text-sm text-red-700">
-                    {error}
-                </p>
-            ) : null}
+            <InputError message={error} id={`${id}-error`} role="alert" />
         </div>
     );
 }

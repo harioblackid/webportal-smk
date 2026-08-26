@@ -4,10 +4,12 @@ import type { FormEvent } from 'react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
 import MediaPicker from '@/components/admin/media-picker';
-import Button from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
-import Textarea from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     destroy as destroyHero,
@@ -64,7 +66,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
             actions={
                 <Link
                     href={heroesIndex()}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-charcoal hover:bg-mist"
+                    className={buttonVariants({ variant: 'ghost' })}
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Kembali ke daftar
@@ -77,7 +79,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                         id="title"
                         required
                         autoFocus
-                        invalid={Boolean(form.errors.title)}
+                        aria-invalid={Boolean(form.errors.title)}
                         value={form.data.title}
                         onChange={(event) =>
                             form.setData('title', event.target.value)
@@ -94,7 +96,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                         id="subtitle"
                         rows={2}
                         maxLength={250}
-                        invalid={Boolean(form.errors.subtitle)}
+                        aria-invalid={Boolean(form.errors.subtitle)}
                         value={form.data.subtitle}
                         onChange={(event) =>
                             form.setData('subtitle', event.target.value)
@@ -111,8 +113,8 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                     onChange={(id) => form.setData('media_id', id)}
                 />
 
-                <fieldset className="space-y-4 rounded-xl border border-charcoal/15 p-5">
-                    <legend className="px-1 text-sm font-semibold text-onyx">
+                <fieldset className="space-y-4 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-sm font-semibold text-foreground">
                         Tombol 1
                     </legend>
 
@@ -125,7 +127,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                             <Input
                                 id="cta1_text"
                                 placeholder="mis. Daftar PPDB"
-                                invalid={Boolean(form.errors.cta1_text)}
+                                aria-invalid={Boolean(form.errors.cta1_text)}
                                 value={form.data.cta1_text}
                                 onChange={(event) =>
                                     form.setData(
@@ -144,7 +146,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                             <Input
                                 id="cta1_url"
                                 placeholder="/jurusan atau https://…"
-                                invalid={Boolean(form.errors.cta1_url)}
+                                aria-invalid={Boolean(form.errors.cta1_url)}
                                 value={form.data.cta1_url}
                                 onChange={(event) =>
                                     form.setData('cta1_url', event.target.value)
@@ -154,8 +156,8 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                     </div>
                 </fieldset>
 
-                <fieldset className="space-y-4 rounded-xl border border-charcoal/15 p-5">
-                    <legend className="px-1 text-sm font-semibold text-onyx">
+                <fieldset className="space-y-4 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-sm font-semibold text-foreground">
                         Tombol 2 (opsional)
                     </legend>
 
@@ -167,7 +169,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                         >
                             <Input
                                 id="cta2_text"
-                                invalid={Boolean(form.errors.cta2_text)}
+                                aria-invalid={Boolean(form.errors.cta2_text)}
                                 value={form.data.cta2_text}
                                 onChange={(event) =>
                                     form.setData(
@@ -185,7 +187,7 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                         >
                             <Input
                                 id="cta2_url"
-                                invalid={Boolean(form.errors.cta2_url)}
+                                aria-invalid={Boolean(form.errors.cta2_url)}
                                 value={form.data.cta2_url}
                                 onChange={(event) =>
                                     form.setData('cta2_url', event.target.value)
@@ -195,21 +197,20 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                     </div>
                 </fieldset>
 
-                <label className="flex min-h-11 items-center gap-3">
-                    <input
-                        type="checkbox"
-                        className="size-4 accent-brand"
+                <div className="flex items-center space-x-3">
+                    <Checkbox
+                        id="is_active"
                         checked={form.data.is_active}
-                        onChange={(event) =>
-                            form.setData('is_active', event.target.checked)
+                        onCheckedChange={(checked) =>
+                            form.setData('is_active', checked === true)
                         }
                     />
-                    <span className="text-sm text-onyx">
+                    <Label htmlFor="is_active">
                         Jadikan hero aktif — hero lain otomatis dinonaktifkan
-                    </span>
-                </label>
+                    </Label>
+                </div>
 
-                <div className="flex flex-wrap items-center gap-3 border-t border-charcoal/15 pt-6">
+                <div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
                     <Button type="submit" disabled={form.processing}>
                         {form.processing ? 'Menyimpan…' : 'Simpan'}
                     </Button>

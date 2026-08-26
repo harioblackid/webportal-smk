@@ -5,136 +5,143 @@ import { home, kontak, profil } from '@/routes';
 import { index as majorsIndex } from '@/routes/majors';
 import { index as postsIndex } from '@/routes/posts';
 
-const links = [
-    { label: 'Beranda', href: home() },
-    { label: 'Profil', href: profil() },
-    { label: 'Jurusan', href: majorsIndex() },
-    { label: 'Berita', href: postsIndex() },
-    { label: 'Kontak', href: kontak() },
+const columns = [
+    {
+        title: 'Sekolah',
+        links: [
+            { text: 'Beranda', href: home() },
+            { text: 'Profil', href: profil() },
+            { text: 'Kontak', href: kontak() },
+        ],
+    },
+    {
+        title: 'Informasi',
+        links: [
+            { text: 'Jurusan', href: majorsIndex() },
+            { text: 'Berita & Pengumuman', href: postsIndex() },
+        ],
+    },
 ];
 
-/** School identity, short contact block, menu, and the foundation credit. */
+/** AstroWind's widgets/Footer — brand column, link columns, contact row. */
 export default function Footer() {
     const site = usePage().props.site;
     const { address, phone, phoneHref, whatsapp, whatsappHref, email } =
         site.contact;
 
+    const channels = [
+        { icon: Phone, label: phone, href: phoneHref },
+        { icon: MessageCircle, label: whatsapp, href: whatsappHref },
+        {
+            icon: Mail,
+            label: email,
+            href: email === null ? null : `mailto:${email}`,
+        },
+    ].filter((channel) => channel.href !== null);
+
     return (
-        <footer className="mt-16 bg-onyx text-white/80">
-            <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-6 md:grid-cols-3 lg:py-14">
-                <div>
-                    <img
-                        src="/logo-smk.png"
-                        alt=""
-                        width={56}
-                        height={56}
-                        loading="lazy"
-                        className="size-14 object-contain"
-                    />
+        <footer className="relative border-t border-gray-200 dark:border-slate-800">
+            <div
+                className="pointer-events-none absolute inset-0 dark:bg-dark"
+                aria-hidden="true"
+            />
 
-                    <p className="mt-4 font-display text-xl font-semibold text-white">
-                        {site.name}
-                    </p>
+            <div className="relative mx-auto max-w-7xl px-4 sm:px-6 dark:text-slate-300">
+                <div className="grid grid-cols-12 gap-4 gap-y-8 py-8 sm:gap-8 md:py-12">
+                    <div className="col-span-12 lg:col-span-4">
+                        <div className="mb-2 flex items-center gap-2.5">
+                            <img
+                                src="/logo-smk.png"
+                                alt=""
+                                width={36}
+                                height={36}
+                                loading="lazy"
+                                className="size-9 object-contain"
+                            />
 
-                    {site.tagline !== null && (
-                        <p className="mt-2 max-w-xs text-sm">{site.tagline}</p>
-                    )}
+                            <Link
+                                className="inline-block text-xl font-bold"
+                                href={home()}
+                            >
+                                {site.name}
+                            </Link>
+                        </div>
 
-                    <span
-                        className="mt-5 block h-1 w-12 rounded-full bg-brand-accent"
-                        aria-hidden="true"
-                    />
-                </div>
+                        {site.tagline !== null && (
+                            <p className="max-w-xs text-sm text-aw-muted">
+                                {site.tagline}
+                            </p>
+                        )}
 
-                <div>
-                    <h2 className="text-sm font-semibold tracking-[0.14em] text-white uppercase">
-                        Kontak
-                    </h2>
-
-                    <ul className="mt-4 space-y-3 text-sm">
                         {address !== null && (
-                            <li className="flex gap-3">
+                            <p className="mt-4 flex max-w-xs gap-2 text-sm text-aw-muted">
                                 <MapPin
-                                    className="mt-0.5 size-4 shrink-0 text-brand-accent"
+                                    className="mt-0.5 size-4 shrink-0"
                                     aria-hidden="true"
                                 />
-                                <span>{address}</span>
-                            </li>
+                                {address}
+                            </p>
                         )}
+                    </div>
 
-                        {phoneHref !== null && (
-                            <li className="flex gap-3">
-                                <Phone
-                                    className="mt-0.5 size-4 shrink-0 text-brand-accent"
-                                    aria-hidden="true"
-                                />
-                                <a
-                                    href={phoneHref}
-                                    className="inline-flex min-h-11 items-center hover:text-white"
-                                >
-                                    {phone}
-                                </a>
-                            </li>
-                        )}
+                    {columns.map((column) => (
+                        <div
+                            key={column.title}
+                            className="col-span-6 md:col-span-3 lg:col-span-2"
+                        >
+                            <div className="mb-2 font-medium dark:text-gray-300">
+                                {column.title}
+                            </div>
 
-                        {whatsappHref !== null && (
-                            <li className="flex gap-3">
-                                <MessageCircle
-                                    className="mt-0.5 size-4 shrink-0 text-brand-accent"
-                                    aria-hidden="true"
-                                />
-                                <a
-                                    href={whatsappHref}
-                                    className="inline-flex min-h-11 items-center hover:text-white"
-                                >
-                                    {whatsapp}
-                                </a>
-                            </li>
-                        )}
+                            <ul className="text-sm">
+                                {column.links.map((link) => (
+                                    <li key={link.text} className="mb-2">
+                                        <Link
+                                            className="text-aw-muted transition duration-150 ease-in-out hover:text-gray-700 hover:underline dark:text-gray-400"
+                                            href={link.href}
+                                        >
+                                            {link.text}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
 
-                        {email !== null && (
-                            <li className="flex gap-3">
-                                <Mail
-                                    className="mt-0.5 size-4 shrink-0 text-brand-accent"
-                                    aria-hidden="true"
-                                />
-                                <a
-                                    href={`mailto:${email}`}
-                                    className="inline-flex min-h-11 items-center break-all hover:text-white"
-                                >
-                                    {email}
-                                </a>
-                            </li>
-                        )}
-                    </ul>
+                    {channels.length > 0 && (
+                        <div className="col-span-12 md:col-span-6 lg:col-span-4">
+                            <div className="mb-2 font-medium dark:text-gray-300">
+                                Hubungi kami
+                            </div>
+
+                            <ul className="text-sm">
+                                {channels.map(({ icon: Icon, label, href }) => (
+                                    <li key={label} className="mb-2">
+                                        <a
+                                            className="inline-flex items-center gap-2 text-aw-muted transition duration-150 ease-in-out hover:text-gray-700 hover:underline dark:text-gray-400"
+                                            href={href ?? undefined}
+                                        >
+                                            <Icon
+                                                className="size-4 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            <span className="break-all">
+                                                {label}
+                                            </span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
-                <div>
-                    <h2 className="text-sm font-semibold tracking-[0.14em] text-white uppercase">
-                        Jelajahi
-                    </h2>
-
-                    <ul className="mt-4 space-y-1 text-sm">
-                        {links.map((link) => (
-                            <li key={link.label}>
-                                <Link
-                                    href={link.href}
-                                    className="inline-flex min-h-11 items-center hover:text-white"
-                                >
-                                    {link.label}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-
-            <div className="border-t border-white/10">
-                <div className="mx-auto max-w-6xl px-5 py-6 text-xs sm:px-6">
-                    <p>
+                <div className="py-6 md:flex md:items-center md:justify-between md:py-8">
+                    <div className="mr-4 text-sm text-aw-muted">
                         Di bawah naungan YPLP Dasar Menengah PGRI. ©{' '}
-                        {new Date().getFullYear()} {site.name}.
-                    </p>
+                        {new Date().getFullYear()} {site.name}. Hak cipta
+                        dilindungi.
+                    </div>
                 </div>
             </div>
         </footer>

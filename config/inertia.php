@@ -16,10 +16,17 @@ return [
     */
 
     'ssr' => [
-        'enabled' => true,
+        /*
+         * On by default — FR6-1 makes SSR the foundation of the whole SEO spec,
+         * so a public page rendering client-side is a defect, not a preference.
+         *
+         * The env switch exists for the test suite: with SSR on and no SSR
+         * process listening, every Inertia response in every test pays a
+         * connection attempt to the port below before falling back to CSR.
+         */
+        'enabled' => env('INERTIA_SSR_ENABLED', true),
         'url' => 'http://127.0.0.1:13714',
         'bundle' => base_path('bootstrap/ssr/ssr.js'),
-
     ],
 
     /*

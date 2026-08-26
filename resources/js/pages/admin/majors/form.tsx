@@ -6,10 +6,12 @@ import { useState } from 'react';
 import ConfirmDelete from '@/components/admin/confirm-delete';
 import MediaPicker from '@/components/admin/media-picker';
 import RichTextEditor from '@/components/admin/rich-text-editor';
-import Button from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import Field from '@/components/ui/field';
-import Input from '@/components/ui/input';
-import Textarea from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     destroy as destroyMajor,
@@ -95,7 +97,7 @@ export default function MajorForm({
             actions={
                 <Link
                     href={majorsIndex()}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-charcoal hover:bg-mist"
+                    className={buttonVariants({ variant: 'ghost' })}
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Kembali ke daftar
@@ -108,7 +110,7 @@ export default function MajorForm({
                         id="name"
                         required
                         autoFocus={!isEdit}
-                        invalid={Boolean(form.errors.name)}
+                        aria-invalid={Boolean(form.errors.name)}
                         value={form.data.name}
                         onChange={(event) => setName(event.target.value)}
                     />
@@ -118,14 +120,14 @@ export default function MajorForm({
                     <Input
                         id="slug"
                         placeholder="otomatis dari nama"
-                        invalid={Boolean(form.errors.slug)}
+                        aria-invalid={Boolean(form.errors.slug)}
                         value={form.data.slug}
                         onChange={(event) => {
                             setSlugLocked(true);
                             form.setData('slug', event.target.value);
                         }}
                     />
-                    <p className="text-sm text-charcoal">
+                    <p className="text-sm text-muted-foreground">
                         /jurusan/{form.data.slug || slugify(form.data.name)}
                     </p>
                 </Field>
@@ -148,13 +150,13 @@ export default function MajorForm({
                         id="excerpt"
                         rows={3}
                         maxLength={300}
-                        invalid={Boolean(form.errors.excerpt)}
+                        aria-invalid={Boolean(form.errors.excerpt)}
                         value={form.data.excerpt}
                         onChange={(event) =>
                             form.setData('excerpt', event.target.value)
                         }
                     />
-                    <p className="text-sm text-charcoal">
+                    <p className="text-sm text-muted-foreground">
                         Dipakai di kartu pada halaman daftar jurusan. Maks 300
                         karakter.
                     </p>
@@ -192,7 +194,7 @@ export default function MajorForm({
                             min={0}
                             max={999}
                             required
-                            invalid={Boolean(form.errors.sort_order)}
+                            aria-invalid={Boolean(form.errors.sort_order)}
                             value={form.data.sort_order}
                             onChange={(event) =>
                                 form.setData(
@@ -201,32 +203,28 @@ export default function MajorForm({
                                 )
                             }
                         />
-                        <p className="text-sm text-charcoal">
+                        <p className="text-sm text-muted-foreground">
                             Angka kecil tampil lebih dulu.
                         </p>
                     </Field>
 
                     <div className="flex items-end">
-                        <label className="flex min-h-11 items-center gap-3">
-                            <input
-                                type="checkbox"
-                                className="size-4 accent-brand"
+                        <div className="flex items-center space-x-3 pb-2">
+                            <Checkbox
+                                id="is_active"
                                 checked={form.data.is_active}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'is_active',
-                                        event.target.checked,
-                                    )
+                                onCheckedChange={(checked) =>
+                                    form.setData('is_active', checked === true)
                                 }
                             />
-                            <span className="text-sm text-onyx">
+                            <Label htmlFor="is_active">
                                 Aktif — tampil di situs publik
-                            </span>
-                        </label>
+                            </Label>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 border-t border-charcoal/15 pt-6">
+                <div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
                     <Button type="submit" disabled={form.processing}>
                         {form.processing ? 'Menyimpan…' : 'Simpan'}
                     </Button>
@@ -236,7 +234,7 @@ export default function MajorForm({
                             href={major.publicUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-brand hover:bg-mist"
+                            className={buttonVariants({ variant: 'link' })}
                         >
                             <ExternalLink
                                 className="size-4"

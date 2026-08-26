@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 
+import { buttonClasses } from '@/components/public/button';
 import { cn } from '@/lib/utils';
 
 type PaginationLink = {
@@ -20,8 +21,9 @@ const readable = (label: string) =>
     label.replaceAll('&laquo;', '«').replaceAll('&raquo;', '»');
 
 /**
- * FR4-6 — page state lives in the URL, so these are real links a visitor can
- * bookmark or share, not buttons that mutate client state.
+ * Page state lives in the URL, so these are real links a visitor can bookmark
+ * or share, not buttons that mutate client state. AstroWind's blog pagination
+ * is prev/next only; the numbered rail here keeps the same tertiary styling.
  */
 export default function Pagination({
     links,
@@ -38,7 +40,12 @@ export default function Pagination({
                 {links.map((link) => (
                     <li key={link.label}>
                         {link.url === null ? (
-                            <span className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 text-sm text-charcoal/40">
+                            <span
+                                className={buttonClasses(
+                                    'tertiary',
+                                    'pointer-events-none min-w-11 px-3 py-2 text-sm opacity-40 md:px-3',
+                                )}
+                            >
                                 {readable(link.label)}
                             </span>
                         ) : (
@@ -46,10 +53,10 @@ export default function Pagination({
                                 href={link.url}
                                 aria-current={link.active ? 'page' : undefined}
                                 className={cn(
-                                    'inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 text-sm font-semibold transition-colors',
-                                    link.active
-                                        ? 'bg-brand text-white'
-                                        : 'text-charcoal hover:bg-mist hover:text-onyx',
+                                    buttonClasses(
+                                        link.active ? 'primary' : 'tertiary',
+                                        'min-w-11 px-3 py-2 text-sm md:px-3',
+                                    ),
                                 )}
                             >
                                 {readable(link.label)}

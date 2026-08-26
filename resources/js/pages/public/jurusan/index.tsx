@@ -1,6 +1,9 @@
 import { GraduationCap } from 'lucide-react';
 
+import HeroText from '@/components/public/hero-text';
 import MajorCard from '@/components/public/major-card';
+import PpdbBanner from '@/components/public/ppdb-banner';
+import WidgetWrapper from '@/components/public/widget-wrapper';
 import PublicLayout from '@/layouts/public-layout';
 import type { MajorCard as MajorCardData, Seo } from '@/types';
 
@@ -12,46 +15,31 @@ type JurusanIndexProps = {
 export default function JurusanIndex({ majors, seo }: JurusanIndexProps) {
     return (
         <PublicLayout seo={seo}>
-            <header className="border-b border-charcoal/10 bg-mist">
-                <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:py-14">
-                    <p className="flex items-center gap-3 text-xs font-semibold tracking-[0.2em] text-brand uppercase">
-                        <span
-                            className="h-px w-8 bg-brand-accent"
-                            aria-hidden="true"
-                        />
-                        Program Keahlian
-                    </p>
+            <HeroText
+                tagline="Program Keahlian"
+                title="Pilih jurusan yang sesuai denganmu"
+                subtitle="Setiap program keahlian punya fokus kompetensi dan prospek yang berbeda. Bandingkan sebelum memutuskan."
+            />
 
-                    <h1 className="mt-4 max-w-2xl font-display text-[30px] leading-tight font-semibold text-onyx sm:text-4xl lg:text-5xl">
-                        Pilih jurusan yang sesuai denganmu
-                    </h1>
-
-                    <p className="mt-4 max-w-xl text-base text-charcoal">
-                        Setiap program keahlian punya fokus kompetensi dan
-                        prospek yang berbeda. Bandingkan sebelum memutuskan.
-                    </p>
-                </div>
-            </header>
-
-            <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6 lg:py-14">
+            <WidgetWrapper containerClass="mx-auto max-w-6xl pt-0 md:pt-0 lg:pt-0">
                 {majors.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-charcoal/25 px-6 py-14 text-center">
+                    <div className="mx-auto max-w-xl rounded-md border border-dashed border-gray-300 px-6 py-14 text-center dark:border-gray-700">
                         <GraduationCap
-                            className="mx-auto size-8 text-brand/40"
+                            className="mx-auto size-8 text-aw-muted"
                             aria-hidden="true"
                         />
 
-                        <p className="mt-4 font-display text-xl font-semibold text-onyx">
+                        <p className="mt-4 font-heading text-xl font-bold">
                             Daftar jurusan belum tersedia
                         </p>
 
-                        <p className="mt-2 text-[15px] text-charcoal">
+                        <p className="mt-2 text-aw-muted">
                             Program keahlian akan tampil di sini setelah
                             diaktifkan oleh sekolah.
                         </p>
                     </div>
                 ) : (
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="-mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {majors.map((major, index) => (
                             <MajorCard
                                 key={major.id}
@@ -61,7 +49,9 @@ export default function JurusanIndex({ majors, seo }: JurusanIndexProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </WidgetWrapper>
+
+            <PpdbBanner />
         </PublicLayout>
     );
 }

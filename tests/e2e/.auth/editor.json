@@ -1,0 +1,45 @@
+{
+  "cookies": [
+    {
+      "name": "appearance",
+      "value": "system",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1819225326.488317,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "XSRF-TOKEN",
+      "value": "eyJpdiI6IjU2VndYSGZ2RHBUTVl0czd0S003Rnc9PSIsInZhbHVlIjoiV2ZvOS95L05lRkZ3RVlCWkdvc2M4UmVEYUxjSlQ4a2x1TUx6OWJqTWp4b09UcDlpbnF2T1BPbkNFTExIWVNqcEllUko0TXpTWmVmUmFmbHFFZW9aa0lPbXo5cUVWUDdQZGkrZXNPdU5ZZHhXa1Mxd2VLdnhvYmhqa0E3dkpPb2MiLCJtYWMiOiI1YTMwNTA5N2I5NjA1OWVhMzU4ZjgxYzhkNDliZDA3NzZlMDQ1YjgzNTQ0ZmEzYTBhMjZjZGE0M2Q1YzNmODE5IiwidGFnIjoiIn0%3D",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1787696539.753396,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "smk-pgri-telagasari-session",
+      "value": "eyJpdiI6InVVYktiNkx0VTcwK0xnbGhVVkxFOVE9PSIsInZhbHVlIjoieTBoaTFBN3I0b3BqWXFJd1ZKYW9BWG0rZ25lK2NsSlo5ZUFDKzdoZ0VTa1ZuMnVNQXJmN3R3SExJU1p5a0JqS2ZzM3JFNzhmV2FtUFRacHBYM3B5NlF2QnZFTzRWcEFPUE0xMW5wOWNiOHdOekZleFhHanh5OGJhVWxHYkt3dDQiLCJtYWMiOiI3YzhjMGE4YTVhZDAwNDJiMGI3NGQ5NjhhNDk1YmQ3ZTBmZmI3NmViNzcwNGNhMWY3MmEwNmY3ZjI0ZTFjN2IwIiwidGFnIjoiIn0%3D",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1787696539.753601,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:8000",
+      "localStorage": [
+        {
+          "name": "appearance",
+          "value": "system"
+        }
+      ]
+    }
+  ]
+}

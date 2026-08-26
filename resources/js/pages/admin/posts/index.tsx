@@ -4,10 +4,18 @@ import type { FormEvent } from 'react';
 import { useState } from 'react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
-import Pagination from '@/components/public/pagination';
-import Button, { buttonClasses } from '@/components/ui/button';
-import Input from '@/components/ui/input';
-import Select from '@/components/ui/select';
+import Pagination from '@/components/admin/pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AdminLayout from '@/layouts/admin-layout';
 import {
     create as createPost,
@@ -25,10 +33,13 @@ type PostsIndexProps = {
     };
 };
 
+/** Radix's Select reserves the empty string, so "semua" needs a sentinel. */
+const ANY_STATUS = 'all';
+
 /** FR5-7 — daftar berita dengan pencarian & filter status. */
 export default function PostsIndex({ posts, filters }: PostsIndexProps) {
     const [q, setQ] = useState(filters.q);
-    const [status, setStatus] = useState(filters.status);
+    const [status, setStatus] = useState(filters.status || ANY_STATUS);
 
     function search(event: FormEvent) {
         event.preventDefault();
@@ -37,7 +48,7 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
         // list rather than at every refinement of the filter.
         router.get(
             postsIndex.url(),
-            { q, status },
+            { q, status: status === ANY_STATUS ? '' : status },
             { preserveState: true, replace: true },
         );
     }
@@ -46,7 +57,7 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
         <AdminLayout
             title="Berita & Pengumuman"
             actions={
-                <Link href={createPost()} className={buttonClasses()}>
+                <Link href={createPost()} className={buttonVariants()}>
                     <Plus className="size-4" aria-hidden="true" />
                     Tulis berita
                 </Link>
@@ -54,15 +65,10 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
         >
             <form
                 onSubmit={search}
-                className="flex flex-wrap items-end gap-3 rounded-xl border border-charcoal/15 p-4"
+                className="flex flex-wrap items-end gap-3 rounded-xl border border-border p-4"
             >
-                <div className="min-w-48 flex-1 space-y-1.5">
-                    <label
-                        htmlFor="q"
-                        className="block text-sm font-semibold text-onyx"
-                    >
-                        Cari judul
-                    </label>
+                <div className="grid min-w-48 flex-1 gap-2">
+                    <Label htmlFor="q">Cari judul</Label>
                     <Input
                         id="q"
                         name="q"
@@ -73,22 +79,17 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
                     />
                 </div>
 
-                <div className="w-44 space-y-1.5">
-                    <label
-                        htmlFor="status"
-                        className="block text-sm font-semibold text-onyx"
-                    >
-                        Status
-                    </label>
-                    <Select
-                        id="status"
-                        name="status"
-                        value={status}
-                        onChange={(event) => setStatus(event.target.value)}
-                    >
-                        <option value="">Semua</option>
-                        <option value="published">Terbit</option>
-                        <option value="draft">Draf</option>
+                <div className="grid w-44 gap-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger id="status" className="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={ANY_STATUS}>Semua</SelectItem>
+                            <SelectItem value="published">Terbit</SelectItem>
+                            <SelectItem value="draft">Draf</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
 
@@ -99,14 +100,14 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
             </form>
 
             {posts.data.length === 0 ? (
-                <p className="mt-6 text-sm text-charcoal">
+                <p className="mt-6 text-sm text-muted-foreground">
                     Tidak ada berita yang cocok dengan filter ini.
                 </p>
             ) : (
                 <div className="mt-6 overflow-x-auto">
                     <table className="w-full border-collapse text-left text-sm">
                         <thead>
-                            <tr className="border-b border-charcoal/20">
+                            <tr className="border-b border-border">
                                 <th
                                     scope="col"
                                     className="py-2 pr-4 font-semibold"
@@ -140,39 +141,39 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
                             {posts.data.map((post) => (
                                 <tr
                                     key={post.id}
-                                    className="border-b border-charcoal/10"
+                                    className="border-b border-border"
                                 >
                                     <td className="py-2 pr-4">
                                         <Link
                                             href={editPost(post.id)}
-                                            className="font-medium text-onyx underline-offset-4 hover:underline"
+                                            className="font-medium text-foreground underline-offset-4 hover:underline"
                                         >
                                             {post.title}
                                         </Link>
-                                        <span className="block text-xs text-charcoal">
+                                        <span className="block text-xs text-muted-foreground">
                                             {post.type === 'pengumuman'
                                                 ? 'Pengumuman'
                                                 : 'Berita'}{' '}
                                             · /{post.slug}
                                         </span>
                                     </td>
-                                    <td className="py-2 pr-4 text-charcoal">
+                                    <td className="py-2 pr-4 text-muted-foreground">
                                         {post.category ?? '—'}
                                     </td>
                                     <td className="py-2 pr-4">
-                                        <span
-                                            className={
+                                        <Badge
+                                            variant={
                                                 post.status === 'published'
-                                                    ? 'inline-block rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand'
-                                                    : 'inline-block rounded-full bg-mist px-2.5 py-0.5 text-xs font-semibold text-charcoal'
+                                                    ? 'default'
+                                                    : 'secondary'
                                             }
                                         >
                                             {post.status === 'published'
                                                 ? 'Terbit'
                                                 : 'Draf'}
-                                        </span>
+                                        </Badge>
                                     </td>
-                                    <td className="py-2 pr-4 whitespace-nowrap text-charcoal">
+                                    <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
                                         {post.publishedAtLabel ?? '—'}
                                     </td>
                                     <td className="py-2">
@@ -180,7 +181,7 @@ export default function PostsIndex({ posts, filters }: PostsIndexProps) {
                                             <Link
                                                 href={editPost(post.id)}
                                                 aria-label={`Edit ${post.title}`}
-                                                className="inline-flex size-11 items-center justify-center rounded-lg text-charcoal hover:bg-mist hover:text-onyx"
+                                                className="inline-flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                             >
                                                 <Pencil
                                                     className="size-4"

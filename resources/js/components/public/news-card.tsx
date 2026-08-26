@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { Clock } from 'lucide-react';
 
 import SiteImage from '@/components/public/site-image';
 import { cn } from '@/lib/utils';
@@ -12,7 +13,7 @@ type NewsCardProps = {
 };
 
 /**
- * FR4-8 — thumbnail, category, date, title, excerpt.
+ * AstroWind's blog/GridItem.
  *
  * The whole card is clickable through a stretched link on the title, so the
  * accessible name stays the headline rather than "read more".
@@ -23,44 +24,46 @@ export default function NewsCard({
     eager = false,
 }: NewsCardProps) {
     return (
-        <article
-            className={cn(
-                'group relative flex flex-col overflow-hidden rounded-xl border border-charcoal/12 bg-white transition-shadow hover:shadow-lg hover:shadow-onyx/5',
-                className,
-            )}
-        >
-            <SiteImage image={post.image} eager={eager} thumb />
+        <article className={cn('group relative mb-6 transition', className)}>
+            <SiteImage
+                image={post.image}
+                ratio="aspect-[16/9] md:h-64 md:aspect-auto"
+                className="mb-6 rounded shadow-lg"
+                eager={eager}
+                thumb
+            />
 
-            <div className="flex flex-1 flex-col p-4 sm:p-5">
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-charcoal">
-                    {post.category !== null && (
-                        <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-brand">
-                            {post.category.name}
-                        </span>
-                    )}
+            <h3 className="mb-2 font-heading text-xl leading-tight font-bold sm:text-2xl dark:text-slate-300">
+                <Link
+                    href={post.url}
+                    className="inline-block transition duration-200 ease-in after:absolute after:inset-0 hover:text-aw-primary dark:hover:text-blue-700"
+                >
+                    {post.title}
+                </Link>
+            </h3>
 
-                    {post.publishedAt !== null && (
+            <p className="mb-2 flex flex-wrap items-center gap-x-2 text-sm text-aw-muted">
+                {post.publishedAt !== null && (
+                    <span className="inline-flex items-center gap-1">
+                        <Clock className="size-4" aria-hidden="true" />
                         <time dateTime={post.publishedAt}>
                             {post.publishedAtLabel}
                         </time>
-                    )}
-                </p>
-
-                <h3 className="mt-2 font-display text-lg leading-snug font-semibold text-onyx sm:text-xl">
-                    <Link
-                        href={post.url}
-                        className="group-hover:text-brand after:absolute after:inset-0"
-                    >
-                        {post.title}
-                    </Link>
-                </h3>
-
-                {post.excerpt !== null && (
-                    <p className="mt-2 line-clamp-3 text-[15px] text-charcoal">
-                        {post.excerpt}
-                    </p>
+                    </span>
                 )}
-            </div>
+
+                {post.category !== null && (
+                    <span className="inline-block bg-gray-100 px-2 py-0.5 font-medium lowercase dark:bg-slate-700">
+                        {post.category.name}
+                    </span>
+                )}
+            </p>
+
+            {post.excerpt !== null && (
+                <p className="line-clamp-3 text-lg text-aw-muted dark:text-slate-400">
+                    {post.excerpt}
+                </p>
+            )}
         </article>
     );
 }
