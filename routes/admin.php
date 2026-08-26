@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\HeroController;
 use App\Http\Controllers\Admin\MajorController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\ProfileSectionController;
 use App\Http\Controllers\Admin\SchoolIdentityController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
@@ -32,6 +33,13 @@ Route::resource('categories', CategoryController::class)
     ->only(['index', 'store', 'update', 'destroy']);
 
 Route::resource('heroes', HeroController::class)->except('show');
+
+// Halaman Visi Misi — editorial copy, so both roles. No toggle: Profil always
+// has this page, the only question is what it says.
+Route::get('profile-sections', [ProfileSectionController::class, 'edit'])
+    ->name('profile-sections.edit');
+Route::put('profile-sections', [ProfileSectionController::class, 'update'])
+    ->name('profile-sections.update');
 
 // Without this, Laravel singularises the parameter to {medium}.
 Route::resource('media', MediaController::class)

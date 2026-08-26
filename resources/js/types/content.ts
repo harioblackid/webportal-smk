@@ -61,3 +61,21 @@ export type Paginated<T> = {
         active: boolean;
     }[];
 };
+
+/** One section of the Visi Misi page, keyed by ProfileSection::KEYS. */
+export type ProfileSection = {
+    key: string;
+    title: string | null;
+    /** Sanitised rich text; rendered through `prose`. */
+    body: string | null;
+    image: Image | null;
+};
+
+/**
+ * One butir misi. `description` is optional so it slots straight into the
+ * Timeline items that widgets/Steps expects.
+ */
+export type Mission = {
+    title: string;
+    description: string | null;
+};

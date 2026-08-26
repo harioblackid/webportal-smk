@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\ProfileMission;
+use App\Models\ProfileSection;
 use App\Models\SchoolIdentity;
 use App\Models\Setting;
 use Inertia\Testing\AssertableInertia;
@@ -12,14 +14,15 @@ test('profil renders with its own metadata', function () {
             ->where('seo.title', 'Profil Sekolah')
         );
 
-    // FR4-15: the four required blocks are static copy in the component, so
-    // they are asserted there. The response carries only the Inertia props —
-    // the copy itself is rendered on the client.
-    expect(file_get_contents(resource_path('js/pages/public/profil.tsx')))
-        ->toContain('Sambutan kepala sekolah')
-        ->toContain('Sejarah singkat')
-        ->toContain('Visi & misi')
-        ->toContain('YPLP Dasar Menengah PGRI');
+    // FR4-15 — the four required blocks. They are CMS rows now rather than
+    // constants in the component, so the props are where they are asserted.
+    expect(ProfileSection::query()->pluck('key')->all())
+        ->toBe(ProfileSection::KEYS)
+        ->and(ProfileSection::query()->where('key', 'sambutan')->value('title'))
+        ->toBe('Sambutan kepala sekolah')
+        ->and(ProfileSection::query()->where('key', 'yayasan')->value('body'))
+        ->toContain('YPLP Dasar Menengah PGRI')
+        ->and(ProfileMission::query()->count())->toBeGreaterThan(0);
 });
 
 test('kontak turns the stored contact details into live links', function () {

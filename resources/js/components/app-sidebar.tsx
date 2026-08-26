@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     LayoutTemplate,
     School,
+    ScrollText,
     Settings,
     Tags,
     Users,
@@ -34,6 +35,7 @@ import { index as heroesIndex } from '@/routes/admin/heroes';
 import { index as majorsIndex } from '@/routes/admin/majors';
 import { index as mediaIndex } from '@/routes/admin/media';
 import { index as postsIndex } from '@/routes/admin/posts';
+import { edit as profileSectionsEdit } from '@/routes/admin/profile-sections';
 import { edit as schoolIdentityEdit } from '@/routes/admin/school-identity';
 import { edit as settingsEdit } from '@/routes/admin/settings';
 import { index as usersIndex } from '@/routes/admin/users';
@@ -50,6 +52,11 @@ const contentNavItems: AdminNavItem[] = [
     { title: 'Kategori', href: categoriesIndex(), icon: Tags },
     { title: 'Hero', href: heroesIndex(), icon: LayoutTemplate },
     { title: 'Media', href: mediaIndex(), icon: Images },
+];
+
+/** The public pages whose content the CMS owns (prd-04 §2, restructured). */
+const pageNavItems: AdminNavItem[] = [
+    { title: 'Visi Misi', href: profileSectionsEdit(), icon: ScrollText },
 ];
 
 const manageNavItems: AdminNavItem[] = [
@@ -98,6 +105,7 @@ export function AppSidebar() {
             }));
 
     const manage = withActive(manageNavItems);
+    const pages = withActive(pageNavItems);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -115,6 +123,8 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain label="Konten" items={withActive(contentNavItems)} />
+
+                {pages.length > 0 && <NavMain label="Halaman" items={pages} />}
 
                 {manage.length > 0 && <NavMain label="Kelola" items={manage} />}
             </SidebarContent>
