@@ -1,6 +1,8 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
+import PageToggle from '@/components/admin/page-toggle';
+import UnsavedGuard from '@/components/admin/unsaved-guard';
 import { Button } from '@/components/ui/button';
 import Field from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -19,6 +21,13 @@ import type { IdentityGroup } from '@/types';
 type SchoolIdentityEditProps = {
     groups: IdentityGroup[];
     values: Record<string, string | null>;
+    /** Whether /profil/identitas is published. */
+    enabled: boolean;
+};
+
+/** The toggle rides in the same form as the fields, so one save covers both. */
+type IdentityFormValues = Record<string, string | boolean> & {
+    enabled: boolean;
 };
 
 /**
@@ -29,8 +38,9 @@ type SchoolIdentityEditProps = {
 export default function SchoolIdentityEdit({
     groups,
     values,
+    enabled,
 }: SchoolIdentityEditProps) {
-    const initial: Record<string, string> = {};
+    const initial: IdentityFormValues = { enabled };
 
     for (const group of groups) {
         for (const field of group.fields) {
@@ -38,11 +48,20 @@ export default function SchoolIdentityEdit({
         }
     }
 
-    const form = useForm<Record<string, string>>(initial);
+    const form = useForm<IdentityFormValues>(initial);
+    const isOn = form.data.enabled;
 
     function submit(event: FormEvent) {
         event.preventDefault();
         form.put(updateSchoolIdentity.url(), { preserveScroll: true });
+    }
+
+    // form.data is a union because the toggle shares it; every field control
+    // below is a string control, so narrow once here rather than at each one.
+    function text(key: string): string {
+        const value = form.data[key];
+
+        return typeof value === 'string' ? value : '';
     }
 
     return (
@@ -53,90 +72,84 @@ export default function SchoolIdentityEdit({
                 yang dibiarkan kosong tidak ditampilkan di halaman publik.
             </p>
 
+            <UnsavedGuard dirty={form.isDirty} />
+
             <form onSubmit={submit} className="mt-6 max-w-3xl space-y-8">
-                {groups.map((group) => (
-                    <fieldset
-                        key={group.key}
-                        className="space-y-5 rounded-xl border border-border p-5"
-                    >
-                        <legend className="px-1 text-lg font-semibold text-foreground">
-                            {group.label}
-                        </legend>
+                <PageToggle
+                    id="enabled"
+                    label="Halaman Identitas Sekolah"
+                    description="Saat dinonaktifkan, halaman hilang dari menu publik, alamatnya menjawab 404, dan seluruh field di bawah tidak dapat diubah."
+                    checked={isOn}
+                    onChange={(checked) => form.setData('enabled', checked)}
+                />
 
-                        {group.fields.map((field) => (
-                            <Field
-                                key={field.key}
-                                id={field.key}
-                                label={
-                                    field.required
-                                        ? `${field.label} *`
-                                        : field.label
-                                }
-                                hint={field.hint ?? undefined}
-                                error={form.errors[field.key]}
-                            >
-                                {field.type === 'select' ? (
-                                    <Select
-                                        value={
-                                            form.data[field.key] === ''
-                                                ? undefined
-                                                : form.data[field.key]
-                                        }
-                                        onValueChange={(value) =>
-                                            form.setData(field.key, value)
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id={field.key}
-                                            className="w-full"
-                                            aria-invalid={Boolean(
-                                                form.errors[field.key],
-                                            )}
-                                        >
-                                            <SelectValue placeholder="Pilih…" />
-                                        </SelectTrigger>
+                <fieldset
+                    disabled={!isOn}
+                    className="space-y-8 disabled:opacity-60"
+                >
+                    {groups.map((group) => (
+                        <div
+                            key={group.key}
+                            className="space-y-5 rounded-xl border border-border p-5"
+                        >
+                            <h2 className="text-lg font-semibold text-foreground">
+                                {group.label}
+                            </h2>
 
-                                        <SelectContent>
-                                            {field.options.map((option) => (
-                                                <SelectItem
-                                                    key={option}
-                                                    value={option}
-                                                >
-                                                    {option}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                ) : field.type === 'textarea' ? (
-                                    <Textarea
-                                        id={field.key}
-                                        rows={2}
-                                        maxLength={field.max}
-                                        aria-invalid={Boolean(
-                                            form.errors[field.key],
-                                        )}
-                                        value={form.data[field.key]}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                field.key,
-                                                event.target.value,
-                                            )
-                                        }
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id={field.key}
-                                            type={field.type}
-                                            maxLength={
-                                                field.type === 'date'
+                            {group.fields.map((field) => (
+                                <Field
+                                    key={field.key}
+                                    id={field.key}
+                                    label={
+                                        field.required
+                                            ? `${field.label} *`
+                                            : field.label
+                                    }
+                                    hint={field.hint ?? undefined}
+                                    error={form.errors[field.key]}
+                                >
+                                    {field.type === 'select' ? (
+                                        <Select
+                                            disabled={!isOn}
+                                            value={
+                                                text(field.key) === ''
                                                     ? undefined
-                                                    : field.max
+                                                    : text(field.key)
                                             }
+                                            onValueChange={(value) =>
+                                                form.setData(field.key, value)
+                                            }
+                                        >
+                                            <SelectTrigger
+                                                id={field.key}
+                                                className="w-full"
+                                                aria-invalid={Boolean(
+                                                    form.errors[field.key],
+                                                )}
+                                            >
+                                                <SelectValue placeholder="Pilih…" />
+                                            </SelectTrigger>
+
+                                            <SelectContent>
+                                                {field.options.map((option) => (
+                                                    <SelectItem
+                                                        key={option}
+                                                        value={option}
+                                                    >
+                                                        {option}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : field.type === 'textarea' ? (
+                                        <Textarea
+                                            id={field.key}
+                                            rows={2}
+                                            maxLength={field.max}
                                             aria-invalid={Boolean(
                                                 form.errors[field.key],
                                             )}
-                                            value={form.data[field.key]}
+                                            value={text(field.key)}
                                             onChange={(event) =>
                                                 form.setData(
                                                     field.key,
@@ -144,22 +157,44 @@ export default function SchoolIdentityEdit({
                                                 )
                                             }
                                         />
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id={field.key}
+                                                type={field.type}
+                                                maxLength={
+                                                    field.type === 'date'
+                                                        ? undefined
+                                                        : field.max
+                                                }
+                                                aria-invalid={Boolean(
+                                                    form.errors[field.key],
+                                                )}
+                                                value={text(field.key)}
+                                                onChange={(event) =>
+                                                    form.setData(
+                                                        field.key,
+                                                        event.target.value,
+                                                    )
+                                                }
+                                            />
 
-                                        {field.suffix === null ? null : (
-                                            <span className="shrink-0 text-sm text-muted-foreground">
-                                                {field.suffix}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </Field>
-                        ))}
-                    </fieldset>
-                ))}
+                                            {field.suffix === null ? null : (
+                                                <span className="shrink-0 text-sm text-muted-foreground">
+                                                    {field.suffix}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </Field>
+                            ))}
+                        </div>
+                    ))}
+                </fieldset>
 
                 <div className="border-t border-border pt-6">
                     <Button type="submit" disabled={form.processing}>
-                        {form.processing ? 'Menyimpan…' : 'Simpan identitas'}
+                        {form.processing ? 'Menyimpan…' : 'Simpan'}
                     </Button>
                 </div>
             </form>

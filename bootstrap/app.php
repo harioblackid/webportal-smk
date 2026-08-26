@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Public\PageController;
+use App\Http\Middleware\EnsurePageEnabled;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventIndexing;
@@ -38,6 +39,9 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        // Public pages the CMS can switch off: `->middleware('page:gallery')`.
+        $middleware->alias(['page' => EnsurePageEnabled::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

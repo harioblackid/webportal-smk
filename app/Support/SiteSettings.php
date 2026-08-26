@@ -50,6 +50,10 @@ class SiteSettings
                 'whatsappHref' => $whatsapp === null ? null : 'https://wa.me/'.self::msisdn($whatsapp),
                 'email' => $identity['email'] ?? null,
             ],
+            // Which optional pages are switched on. The navbar reads this to
+            // decide what to render; the server still gates each route, so a
+            // stale client cannot reach a page that is off.
+            'pages' => PageVisibility::all(),
             'ppdb' => [
                 // FR4-14: the banner is opt-in, and a banner without a target
                 // is worse than no banner at all.

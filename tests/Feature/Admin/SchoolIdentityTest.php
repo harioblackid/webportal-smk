@@ -2,6 +2,7 @@
 
 use App\Models\SchoolIdentity;
 use App\Models\User;
+use App\Support\PageVisibility;
 use App\Support\SchoolIdentityFields;
 use Inertia\Testing\AssertableInertia;
 
@@ -19,6 +20,9 @@ function identityPayload(array $overrides = []): array
     }
 
     return array_merge($payload, [
+        // The toggle travels with the fields: with it off they are disabled in
+        // the form and the request carries the switch alone.
+        'enabled' => true,
         'nama_sekolah' => 'SMK PGRI Telagasari',
         'jenjang_pendidikan' => 'SMK',
         'status_sekolah' => 'Swasta',
@@ -117,4 +121,39 @@ test('identity changes reach every public page immediately', function () {
             ->where('site.contact.email', 'humas@example.test')
             ->where('site.contact.phoneHref', 'tel:0267123456')
         );
+});
+
+// Toggle halaman publik — the switch shares the form with the fields.
+
+test('switching the page off hides it without touching the stored values', function () {
+    SchoolIdentity::put('nama_sekolah', 'SMK PGRI Telagasari');
+
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.school-identity.update'), ['enabled' => false])
+        ->assertRedirect(route('admin.school-identity.edit'));
+
+    expect(PageVisibility::enabled('identitas'))->toBeFalse()
+        // The fields were disabled in the form, so nothing about them was
+        // submitted and nothing about them may change.
+        ->and(SchoolIdentity::get('nama_sekolah'))->toBe('SMK PGRI Telagasari');
+
+    $this->get(route('identitas'))->assertNotFound();
+});
+
+test('the toggle state is sent to the form', function () {
+    PageVisibility::set('identitas', false);
+
+    actingAs(User::factory()->superadmin()->create())
+        ->get(route('admin.school-identity.edit'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('enabled', false));
+});
+
+test('switching the page back on brings it and its sitemap entry back', function () {
+    PageVisibility::set('identitas', false);
+
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.school-identity.update'), identityPayload());
+
+    $this->get(route('identitas'))->assertOk();
+    $this->get('/sitemap.xml')->assertSee('/profil/identitas', false);
 });

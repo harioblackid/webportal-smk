@@ -34,6 +34,17 @@ export type Site = {
         whatsappHref: string | null;
         email: string | null;
     };
+    /**
+     * Optional pages the CMS can switch off. The navbar hides what is false;
+     * the server answers 404 for it regardless (App\Http\Middleware\
+     * EnsurePageEnabled), so this is presentation, not enforcement.
+     */
+    pages: {
+        identitas: boolean;
+        spektrum: boolean;
+        gallery: boolean;
+        ekskul: boolean;
+    };
     ppdb: {
         enabled: boolean;
         url: string | null;

@@ -16,7 +16,16 @@ class SchoolIdentityRequest extends FormRequest
      */
     public function rules(): array
     {
-        return SchoolIdentityFields::rules();
+        $rules = ['enabled' => ['boolean']];
+
+        // With the page switched off its fields are disabled in the form, so
+        // an error on one of them would have no control to fix it in. The
+        // toggle then travels alone and the stored values are left untouched.
+        if ($this->boolean('enabled')) {
+            $rules += SchoolIdentityFields::rules();
+        }
+
+        return $rules;
     }
 
     /**

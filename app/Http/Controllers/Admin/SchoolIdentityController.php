@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SchoolIdentityRequest;
 use App\Models\SchoolIdentity;
+use App\Support\PageVisibility;
 use App\Support\SchoolIdentityFields;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -24,6 +25,7 @@ class SchoolIdentityController extends Controller
         return Inertia::render('admin/school-identity/edit', [
             'groups' => SchoolIdentityFields::formGroups(),
             'values' => SchoolIdentityFields::all(),
+            'enabled' => PageVisibility::enabled('identitas'),
         ]);
     }
 
@@ -31,13 +33,23 @@ class SchoolIdentityController extends Controller
     {
         /** @var array<string, mixed> $data */
         $data = $request->validated();
+        $enabled = (bool) ($data['enabled'] ?? false);
 
-        foreach (SchoolIdentityFields::keys() as $key) {
-            SchoolIdentity::put($key, self::normalise($data[$key] ?? null));
+        PageVisibility::set('identitas', $enabled);
+
+        // Only when the page is on: with it off the fields are disabled, so
+        // whatever the request carries for them is not something the admin
+        // could have typed.
+        if ($enabled) {
+            foreach (SchoolIdentityFields::keys() as $key) {
+                SchoolIdentity::put($key, self::normalise($data[$key] ?? null));
+            }
         }
 
         return to_route('admin.school-identity.edit')
-            ->with('success', 'Identitas sekolah disimpan.');
+            ->with('success', $enabled
+                ? 'Identitas sekolah disimpan.'
+                : 'Halaman Identitas Sekolah dinonaktifkan.');
     }
 
     /**

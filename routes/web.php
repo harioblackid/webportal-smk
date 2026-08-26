@@ -4,6 +4,7 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MajorController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
+use App\Http\Controllers\Public\SchoolIdentityController;
 use App\Http\Controllers\Public\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('profil', [PageController::class, 'profil'])->name('profil');
+
+// Profil sub-pages the CMS can switch off. The middleware answers 404 when a
+// page is off, so an unlinked URL is not merely hidden — it is gone.
+Route::get('profil/identitas', SchoolIdentityController::class)
+    ->middleware('page:identitas')
+    ->name('identitas');
+
 Route::get('kontak', [PageController::class, 'kontak'])->name('kontak');
 
 Route::get('berita', [PostController::class, 'index'])->name('posts.index');
