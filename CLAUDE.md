@@ -13,6 +13,10 @@ first). **`prd/` is gitignored** — it exists locally only, so it will not appe
 fresh clone. Requirements are numbered (`FR5-2`, `US-018`, …) and each user story carries a
 checkbox acceptance list; treat those IDs as the unit of work and verify against the checkboxes.
 
+`docs/` is gitignored for the same reason — operator runbooks (`deployment.md`,
+`seo-search-console.md`) exist locally only. Referencing them from committed files is fine, but
+never assume the file is present on a fresh clone or on the server.
+
 ## Commands
 
 ```bash
@@ -146,6 +150,21 @@ Two layers, because the full matrix does not pay for itself:
 alone with a single worker, because timing sampled while five browsers compete measures the machine,
 not the page.
 
+Since the content-dependent specs skip themselves on an empty database, both halves of that
+behaviour need exercising. A scratch database gives the CI shape without touching the dev data —
+the SSR process only renders the props it is handed, so it can be reused across databases:
+
+```bash
+php -r "(new PDO('mysql:host=127.0.0.1','root',''))->exec('CREATE DATABASE IF NOT EXISTS laravel_portal_e2e');"
+DB_DATABASE=laravel_portal_e2e php artisan migrate --force
+DB_DATABASE=laravel_portal_e2e php artisan db:seed --force
+DB_DATABASE=laravel_portal_e2e E2E_PORT=8123 npx playwright test --grep-invert @perf
+```
+
+A spec that *passes* there rather than skipping is the signal to check: it usually means the
+locator is matching page chrome (a sidebar avatar, a bundled logo) instead of the content it
+claims to assert on.
+
 Two gotchas worth knowing:
 
 - Workers are capped at 4. `php artisan serve` is PHP's built-in server and handles **one request at
@@ -155,21 +174,24 @@ Two gotchas worth knowing:
   Inertia then posts pages to the Vite hot endpoint instead of the SSR port, nothing answers, and
   **every public page silently degrades to CSR while looking perfectly healthy**. Delete the file.
 
-### Demo fixture
+### No content fixture
 
-`php artisan demo:images` caches ~22 school photos from Pexels (free for commercial use, no
-attribution required) into `storage/app/private/demo-images/`, then `php artisan db:seed
---class=DemoSeeder` pushes them through the real `ImageProcessor` so the rows are indistinguishable
-from genuine uploads. It is idempotent, is never called by `DatabaseSeeder`, and marks everything it
-creates with a `demo-` prefix (accounts live on `@demo.test`).
+There is no sample content and no stock photography. `php artisan db:seed` creates accounts
+(`DatabaseSeeder`), jurusan and ekstrakurikuler (`SchoolContentSeeder`), the identity record
+(`SchoolIdentitySeeder`), and the site settings (`SettingsSeeder`) — nothing else. Berita, media,
+heroes, gallery albums, and spektrum kurikulum are CMS content the school enters itself, so an empty
+database is the normal starting state rather than a broken one.
 
-`php artisan demo:clear` removes all of it and restores the pre-seed references from the snapshot at
-`storage/app/private/demo-images/.original-refs.json`. **These are stock photos of other schools —
-test material, not release content.** Real photos must replace them before the site goes live.
+**Every seeder is insert-if-absent, and it has to stay that way.** `deploy/release.sh` runs
+`db:seed --force` on every release, so a seeder that wrote unconditionally would erase the school's
+CMS edits each time a release went out. The one exception is `DatabaseSeeder::account()`, which does
+reset the password — but only outside `APP_ENV=production`, because the browser suite logs in with
+the constants in that file.
 
-The seeder also creates one `demo-` spektrum kurikulum, using the ordinary Kurikulum Merdeka SMK
-structure. Same rule: it is a worked example so the page has something to render, not the school's
-actual mata pelajaran list.
+The browser suite adapts instead of relying on a fixture: `firstBeritaPath()` and
+`hasPublishedMedia()` in `tests/e2e/routes.ts` probe raw HTML, and the specs that assert on content
+call `test.skip()` when the database has none. The Core Web Vitals project therefore reports as
+skipped on CI — `FR6-16` is checked by hand with Lighthouse against a database that has content.
 
 ## Locked product decisions
 
@@ -197,6 +219,21 @@ From the brief in `prd-00-index.md`; do not re-litigate these without being aske
 - **Deployment runs only on explicit instruction from the school** (`FR8-4`). Never run the release
   sequence (`git pull` → build SSR → `migrate --force` → caches → restart SSR, `FR8-13`)
   proactively. Infrastructure — VPS, CloudPanel, DNS, SSL — is the school's responsibility.
+  The pipeline lives in `.github/workflows/deploy.yml` and `deploy/release.sh`, documented in
+  `docs/deployment.md`. It is `workflow_dispatch`-only and gated behind the `production` GitHub
+  Environment, so FR8-15 still holds: a release happens when someone clicks and approves it, and
+  never from a push. `release.sh` is piped to the VPS over stdin rather than kept on the server.
+- **On the server, `php` on PATH is the wrong interpreter.** CloudPanel installs several PHP
+  versions side by side and assigns one *per site*, while `/usr/bin/php` stays the system-wide
+  `update-alternatives` symlink. `release.sh` reads the site's version from its PHP-FPM pool
+  (`/etc/php/*/fpm/pool.d/<site-user>.conf`), refuses to run below 8.3, and puts the resolved binary
+  first on `PATH` — without that last part the Composer phar and its `@php artisan package:discover`
+  script would still run on the system one. `deploy/supervisor/*.conf` pin the version explicitly
+  for the same reason.
+- **`release.sh` prunes the server checkout** via `git sparse-checkout`: `.claude/`, `.codegraph/`,
+  `.github/`, `deploy/`, and `CLAUDE.md` never land in the worktree. Sparse-checkout rather than
+  `rm -rf` so `git status` stays clean; the objects remain, so `git show HEAD:deploy/…` still reads
+  an excluded file during server setup.
 
 ## Claude Code automation in this repo
 

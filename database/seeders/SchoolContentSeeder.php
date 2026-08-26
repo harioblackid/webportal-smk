@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
 /**
  * The school's real program keahlian and ekstrakurikuler.
  *
- * Not DemoSeeder: this is the school's own content, supplied by them, so it
- * carries no `demo-` prefix and `demo:clear` must never touch it.
+ * The school's own content, supplied by them — not sample data, and not
+ * something a later release may overwrite.
  *
  * Names only. Excerpt, description, and photos are left null on purpose —
  * writing marketing copy for a real jurusan would mean inventing claims about

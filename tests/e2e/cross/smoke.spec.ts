@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import {
     detailSources,
     documentRoutes,
+    firstBeritaPath,
     notFoundRoutes,
     publicRoutes,
 } from '../routes';
@@ -119,7 +120,15 @@ test.describe('halaman publik bebas error di semua browser', () => {
 });
 
 test.describe('halaman detail dari data yang di-seed', () => {
-    test('detail berita', async ({ page, baseURL }) => {
+    test('detail berita', async ({ page, baseURL, request }) => {
+        // Berita are CMS content, not seeded, so a fresh database has none.
+        // Skipping keeps the assertions below meaningful instead of turning
+        // them into a test that passes because there was nothing to check.
+        test.skip(
+            (await firstBeritaPath(request)) === null,
+            'belum ada berita di database',
+        );
+
         const faults = watchForFaults(page, baseURL);
 
         await page.goto(detailSources.berita);

@@ -100,8 +100,8 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.3'
-          # gd is not optional here: ImageProcessor resizes every demo photo
-          # through it, and without it the fixture has no images at all.
+          # gd is not optional here: ImageProcessor runs every upload through
+          # it, so the admin media specs fail without it.
           extensions: pdo_mysql, gd
           tools: composer:v2
           coverage: none
@@ -124,16 +124,16 @@ jobs:
       - name: Build SSR bundle
         run: npm run build:ssr
 
-      - name: Cache demo photos
-        uses: actions/cache@v4
-        with:
-          path: storage/app/private/demo-images
-          key: demo-images-${{ hashFiles('app/Console/Commands/DemoImagesCommand.php') }}
-
-      - name: Seed demo content
-        run: |
-          php artisan demo:images
-          php artisan db:seed --class=DemoSeeder --force
+      # Accounts, jurusan, ekstrakurikuler, the identity record, and the site
+      # settings — the same seeders a release runs. Required, not optional:
+      # tests/e2e/auth.setup.ts signs in with the credentials DatabaseSeeder
+      # creates, so without this every admin spec fails at login rather than on
+      # anything it means to test.
+      #
+      # There is no content fixture. Specs that need berita, media, or a hero
+      # detect the empty database and skip themselves (see tests/e2e/routes.ts).
+      - name: Seed accounts, content and settings
+        run: php artisan db:seed --force
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -153,6 +153,11 @@ jobs:
       - name: Measure Core Web Vitals
         # Separate step so timing is not sampled while the matrix above is
         # still competing for the runner's CPU.
+        #
+        # Expect these to report as skipped on CI: the Core Web Vitals probes
+        # need photos to have an LCP candidate at all, and there is no content
+        # fixture any more. US-021 / FR6-16 is verified by hand (Lighthouse)
+        # against a database that has real content.
         run: npm run test:e2e:perf
 
       - name: Upload Playwright report

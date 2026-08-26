@@ -1,11 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+import { hasPublishedMedia } from '../routes';
+
 /**
  * US-021 / FR6-14 / FR6-16 — Core Web Vitals on mobile.
  *
- * These only became measurable once the fixture had real photos: with an empty
- * hero there is no LCP candidate to time, and a page of grey placeholder boxes
- * cannot shift its layout.
+ * Every probe here needs photos on the page: with an empty hero there is no LCP
+ * candidate to time, no lazy-loading contract to check, and nothing whose
+ * format could be wrong. There is no content fixture, so each one asks
+ * hasPublishedMedia() first and skips rather than passing on an empty page —
+ * a budget that is met because the page is blank teaches nobody anything.
+ *
+ * That means these report as skipped on CI. US-021 / FR6-16 is verified by hand
+ * with Lighthouse against a database that has real content.
  *
  * Chromium only — LargestContentfulPaint and layout-shift entries are not
  * implemented in WebKit or Firefox.
@@ -27,7 +34,12 @@ const CLS_BUDGET = 0.1;
 test.describe('core web vitals (mobile)', { tag: '@perf' }, () => {
     test.use({ viewport: MOBILE });
 
-    test('beranda memenuhi anggaran LCP dan CLS', async ({ page }) => {
+    test('beranda memenuhi anggaran LCP dan CLS', async ({ page, request }) => {
+        test.skip(
+            !(await hasPublishedMedia(request)),
+            'beranda belum memuat media, LCP tidak bermakna',
+        );
+
         await page.goto('/', { waitUntil: 'load' });
 
         const vitals = await page.evaluate(
@@ -73,7 +85,15 @@ test.describe('core web vitals (mobile)', { tag: '@perf' }, () => {
 test.describe('kontrak gambar (FR6-14)', { tag: '@perf' }, () => {
     test.use({ viewport: MOBILE });
 
-    test('gambar hero dimuat eager, sisanya lazy', async ({ page }) => {
+    test('gambar hero dimuat eager, sisanya lazy', async ({
+        page,
+        request,
+    }) => {
+        test.skip(
+            !(await hasPublishedMedia(request)),
+            'beranda belum memuat media',
+        );
+
         await page.goto('/');
 
         const images = page.locator('img');
@@ -93,7 +113,15 @@ test.describe('kontrak gambar (FR6-14)', { tag: '@perf' }, () => {
         ).toBe(true);
     });
 
-    test('media tersaji dalam format modern, bukan jpeg', async ({ page }) => {
+    test('media tersaji dalam format modern, bukan jpeg', async ({
+        page,
+        request,
+    }) => {
+        test.skip(
+            !(await hasPublishedMedia(request)),
+            'beranda belum memuat media',
+        );
+
         const served: string[] = [];
 
         page.on('response', (response) => {

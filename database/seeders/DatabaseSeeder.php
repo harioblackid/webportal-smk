@@ -33,9 +33,9 @@ class DatabaseSeeder extends Seeder
     public const PASSWORD = 'adminsmk99';
 
     /**
-     * Idempotent. A re-run resets both accounts to the constants above rather
-     * than skipping them, so the credentials in code are always the credentials
-     * that work — the browser suite logs in with exactly these.
+     * Idempotent, and safe to run on every release: deploy/release.sh calls
+     * `db:seed --force` each time, so nothing here may overwrite what the
+     * school has since changed in the CMS.
      */
     public function run(): void
     {
@@ -45,16 +45,34 @@ class DatabaseSeeder extends Seeder
         // The school's own jurusan and ekstrakurikuler. Safe to run every time
         // — it is idempotent by slug and never overwrites CMS edits.
         $this->call(SchoolContentSeeder::class);
+
+        // The identity record and the site settings a fresh database would
+        // otherwise have no rows for at all. Both insert-if-absent.
+        $this->call(SchoolIdentitySeeder::class);
+        $this->call(SettingsSeeder::class);
     }
 
+    /**
+     * Outside production a re-run resets the account to the constants above, so
+     * the credentials in code are always the credentials that work and the
+     * browser suite can log in with exactly these.
+     *
+     * In production the password and role are written only when the account is
+     * genuinely new. Without that, every release would hand the Superadmin
+     * account back to the bootstrap password published in this file — undoing
+     * the change the school was told to make right after their first login.
+     */
     private function account(string $email, string $name, UserRole $role): User
     {
         $user = User::withTrashed()->firstOrNew(['email' => $email]);
 
+        if (! $user->exists || ! app()->isProduction()) {
+            $user->password = Hash::make(self::PASSWORD);
+            $user->role = $role;
+        }
+
         $user->fill([
             'name' => $name,
-            'password' => Hash::make(self::PASSWORD),
-            'role' => $role,
             'email_verified_at' => now(),
         ]);
         $user->deleted_at = null;

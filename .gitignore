@@ -12,6 +12,8 @@
 /storage/pail
 /vendor
 /prd
+/docs
+
 
 .env
 .env.backup

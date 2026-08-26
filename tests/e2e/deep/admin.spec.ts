@@ -30,22 +30,37 @@ test.describe('superadmin', () => {
     test('mencari berita mempersempit daftar', async ({ page }) => {
         await page.goto('/admin/posts');
 
+        // The search term is taken from a row that actually exists rather than
+        // hard-coded: berita are CMS content, so there is no title this test
+        // can count on being present. ConfirmDelete labels every row
+        // `Hapus <judul>`, which is the one place the title is machine-readable.
+        const firstRow = page.getByRole('button', { name: /^Hapus / }).first();
+
+        test.skip(
+            (await firstRow.count()) === 0,
+            'belum ada berita di database',
+        );
+
+        const label = (await firstRow.getAttribute('aria-label')) ?? '';
+        // One word, so the query cannot be defeated by pagination or by a
+        // title long enough to be truncated in the cell.
+        const term = label.replace(/^Hapus\s+/, '').split(/\s+/)[0];
+
         const search = page.getByPlaceholder(/mis\./i).first();
 
         await expect(search).toBeVisible();
-        await search.fill('Kunjungan');
+        await search.fill(term);
         await search.press('Enter');
 
-        await page.waitForURL(/q=Kunjungan/);
-        await expect(page.locator('body')).toContainText(/Kunjungan/i);
+        await page.waitForURL(new RegExp(`q=${encodeURIComponent(term)}`, 'i'));
+        await expect(page.locator('body')).toContainText(term);
     });
 
     test('membuat berita baru lewat form', async ({ page }) => {
-        // The "Demo" prefix makes the derived slug start with `demo-`, so
-        // `php artisan demo:clear` force-deletes it. Deleting through the UI
-        // below is a SOFT delete, which hides the row but keeps it (and its
-        // slug) in the table forever.
-        const title = `Demo Uji Otomatis ${Date.now()}`;
+        // Timestamped because Post uses SoftDeletes: the row this test deletes
+        // at the end keeps its slug in the table forever, so a fixed title
+        // would collide with itself on the second run.
+        const title = `Uji Otomatis ${Date.now()}`;
 
         await page.goto('/admin/posts/create');
 
@@ -93,10 +108,20 @@ test.describe('superadmin', () => {
     test('media picker menampilkan pustaka gambar', async ({ page }) => {
         await page.goto('/admin/media');
 
-        // The demo fixture uploads 23 images; an empty grid means the seeder
-        // never ran, and every image-dependent assertion downstream is void.
-        await expect(page.locator('img').first()).toBeVisible();
-        expect(await page.locator('img').count()).toBeGreaterThan(0);
+        // Media are uploads, not seeded data, so an empty library is the normal
+        // state of a fresh install rather than a fault.
+        //
+        // Detected by the page's own empty-state copy, and asserted inside
+        // <main>: a bare `img` locator also matches the sidebar avatar, so it
+        // would report a healthy library on a database holding no media at all.
+        const empty = page.getByText('Belum ada gambar di pustaka.');
+
+        test.skip(await empty.isVisible(), 'pustaka media masih kosong');
+
+        const images = page.getByRole('main').locator('ul img');
+
+        await expect(images.first()).toBeVisible();
+        expect(await images.count()).toBeGreaterThan(0);
     });
 });
 

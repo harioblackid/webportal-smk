@@ -1,0 +1,125 @@
+name: deploy
+
+# FR8-15: a release never runs on its own. The only trigger is a manual dispatch,
+# and the `production` environment below lets the school add a required reviewer
+# so that "explicit instruction" is enforced by GitHub rather than by memory.
+on:
+  workflow_dispatch:
+    inputs:
+      skip_ci_gate:
+        description: 'Deploy even if the CI job on this commit is not green (emergency only)'
+        type: boolean
+        default: false
+      skip_migrations:
+        description: 'Skip php artisan migrate --force'
+        type: boolean
+        default: false
+      skip_seeders:
+        description: 'Skip php artisan db:seed --force'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  checks: read
+
+# Two releases writing to the same document root at once would interleave a
+# half-built public/build with live traffic. Queue them instead.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The VPS builds from git, so the commit has to be reachable from origin
+      # before the server is told to reset onto it.
+      - name: Require green CI on this commit
+        if: ${{ !inputs.skip_ci_gate }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/check-runs" \
+            --jq '[.check_runs[] | select(.name == "ci")] | first | .conclusion // "missing"')"
+
+          if [ "${conclusion}" != "success" ]; then
+            echo "::error::CI job 'ci' on ${GITHUB_SHA} is '${conclusion}'. Push a green commit, or re-run with skip_ci_gate."
+            exit 1
+          fi
+
+          browser="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/check-runs" \
+            --jq '[.check_runs[] | select(.name == "browser tests")] | first | .conclusion // "missing"')"
+
+          if [ "${browser}" != "success" ]; then
+            echo "::warning::Browser tests on this commit are '${browser}' — releasing anyway."
+          fi
+
+      # Done inline rather than through a third-party action: one less pinned
+      # dependency holding the deploy key.
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "${SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # release.sh is piped from this checkout, so the server always runs the
+      # release procedure belonging to the commit being released — there is no
+      # second copy on the VPS to drift out of date.
+      - name: Run release sequence on the VPS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+          APP_DIR: ${{ vars.APP_DIR }}
+          # Optional override. Left unset, release.sh reads the version
+          # CloudPanel assigned to this site from its PHP-FPM pool rather than
+          # trusting `php` on PATH, which is the system-wide symlink.
+          PHP_VERSION: ${{ vars.PHP_VERSION }}
+          SKIP_MIGRATIONS: ${{ inputs.skip_migrations }}
+          SKIP_SEEDERS: ${{ inputs.skip_seeders }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "${SSH_PORT}" -o IdentitiesOnly=yes \
+            "${SSH_USER}@${SSH_HOST}" \
+            "APP_DIR='${APP_DIR}' RELEASE_REF='${GITHUB_SHA}' PHP_VERSION='${PHP_VERSION}' SKIP_MIGRATIONS='${SKIP_MIGRATIONS}' SKIP_SEEDERS='${SKIP_SEEDERS}' bash -s" \
+            < deploy/release.sh
+
+      # FR6-1 / US-025: a release that boots but silently degrades to CSR is the
+      # failure this project cares about most, so assert on raw HTML, the same
+      # way tests/e2e/cross/seo.spec.ts does.
+      - name: Verify the site is up and server-rendered
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          body="$(curl --fail --silent --show-error --location --retry 3 --retry-delay 5 "${APP_URL}")"
+
+          if ! printf '%s' "${body}" | grep -q 'data-page'; then
+            echo "::error::Homepage did not contain an Inertia data-page attribute."
+            exit 1
+          fi
+
+          if ! printf '%s' "${body}" | grep -qi '<h1'; then
+            echo "::error::Homepage HTML has no <h1> — SSR is not rendering, the page fell back to CSR."
+            exit 1
+          fi
+
+          echo "Release verified at ${APP_URL}"
+
+      - name: Clean up SSH key
+        if: ${{ always() }}
+        run: rm -f ~/.ssh/id_deploy

@@ -6,6 +6,8 @@
  * Mirrors routes/web.php and routes/admin.php.
  */
 
+import type { APIRequestContext } from '@playwright/test';
+
 export type Route = {
     /** Path to visit, relative to baseURL. */
     path: string;
@@ -109,3 +111,42 @@ export const storageState = {
     superadmin: 'tests/e2e/.auth/superadmin.json',
     editor: 'tests/e2e/.auth/editor.json',
 };
+
+/*
+ * Content probes.
+ *
+ * The seeders create accounts, jurusan, ekstrakurikuler, the identity record,
+ * and the site settings — no berita, no media, no hero. Specs that assert on
+ * content ask one of these first and skip themselves when the answer is empty,
+ * so the assertions stay in the repo and start covering FR6-12, FR6-9, and
+ * FR6-14 again the moment they run against a database that has content.
+ *
+ * Both read raw HTML rather than the rendered DOM: they have to work before a
+ * page object exists, and unauthenticated.
+ */
+
+/**
+ * Category chips live under /berita/ too, so they are excluded by href rather
+ * than by link text.
+ */
+const BERITA_DETAIL =
+    /href="(?:https?:\/\/[^"]*)?(\/berita\/(?!kategori\/)[a-z0-9-]+)"/;
+
+/** The path of the first berita on the listing, or null when there are none. */
+export async function firstBeritaPath(
+    request: APIRequestContext,
+): Promise<string | null> {
+    const listing = await (await request.get('/berita')).text();
+    const match = listing.match(BERITA_DETAIL);
+
+    return match === null ? null : match[1];
+}
+
+/** Whether the home page references any uploaded media at all. */
+export async function hasPublishedMedia(
+    request: APIRequestContext,
+): Promise<boolean> {
+    const home = await (await request.get('/')).text();
+
+    return home.includes('/storage/media/');
+}
