@@ -7,8 +7,8 @@ use App\Models\Major;
 use App\Models\Media;
 use App\Models\Post;
 use App\Models\Setting;
-use App\Models\User;
 use App\Support\ImageProcessor;
+use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Storage;
  * References are restored from the snapshot the seeder wrote, so rows that
  * already had an image before seeding get their original one back instead of
  * being left null.
+ *
+ * Accounts are deliberately left alone: the Superadmin and Editor belong to
+ * {@see DatabaseSeeder}, not to the demo fixture, and deleting them would
+ * lock the admin panel.
  */
 class DemoClearCommand extends Command
 {
@@ -34,16 +38,15 @@ class DemoClearCommand extends Command
     {
         $posts = Post::withTrashed()->where('slug', 'like', DemoSeeder::MARKER.'%')->get();
         $media = Media::query()->where('filename', 'like', DemoSeeder::MARKER.'%')->get();
-        $users = User::withTrashed()->where('email', 'like', '%@demo.test')->get();
 
-        if ($posts->isEmpty() && $media->isEmpty() && $users->isEmpty()) {
+        if ($posts->isEmpty() && $media->isEmpty()) {
             $this->components->info('Tidak ada konten demo yang perlu dihapus.');
 
             return self::SUCCESS;
         }
 
         $confirmed = (bool) $this->option('force') || $this->confirm(
-            "Hapus {$posts->count()} berita, {$media->count()} media, dan {$users->count()} akun demo?",
+            "Hapus {$posts->count()} berita dan {$media->count()} media demo?",
             true,
         );
 
@@ -64,12 +67,8 @@ class DemoClearCommand extends Command
             $item->delete();
         }
 
-        foreach ($users as $user) {
-            $user->forceDelete();
-        }
-
         $this->components->info(
-            "Konten demo dihapus: {$posts->count()} berita, {$media->count()} media, {$users->count()} akun."
+            "Konten demo dihapus: {$posts->count()} berita, {$media->count()} media."
         );
 
         return self::SUCCESS;

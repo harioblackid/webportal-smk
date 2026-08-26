@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Console\Commands\DemoImagesCommand;
-use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Hero;
 use App\Models\Major;
@@ -15,7 +14,6 @@ use App\Support\ImageProcessor;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -37,14 +35,6 @@ class DemoSeeder extends Seeder
 
     /** Prefixes demo post slugs and demo media filenames. */
     public const MARKER = 'demo-';
-
-    /** Demo accounts live on this domain so `demo:clear` can find them. */
-    public const SUPERADMIN = 'superadmin@demo.test';
-
-    public const EDITOR = 'editor@demo.test';
-
-    /** A fixture credential, not a secret — these accounts only exist locally. */
-    public const PASSWORD = 'password';
 
     /**
      * The stored `maps_embed` held a truncated `pb=` blob that Google answers
@@ -158,38 +148,18 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * Two accounts with known passwords, because the browser suite has to log in
-     * as each role to prove the FR5-2 split (an Editor must get 403, not a
-     * hidden button). Existing accounts are left alone — their passwords are
-     * not knowable from code, which is exactly why these exist.
+     * The demo berita need an author, and the browser suite needs to log in as
+     * each role to prove the FR5-2 split. Both accounts come from
+     * {@see DatabaseSeeder}, which owns them and their known passwords — this
+     * seeder no longer mints throwaway ones of its own.
      */
     private function author(): User
     {
-        $superadmin = $this->account(
-            self::SUPERADMIN,
-            'Superadmin Demo',
-            UserRole::Superadmin,
-        );
+        $this->callOnce(DatabaseSeeder::class);
 
-        $this->account(self::EDITOR, 'Editor Demo', UserRole::Editor);
-
-        return $superadmin;
-    }
-
-    private function account(string $email, string $name, UserRole $role): User
-    {
-        $user = User::withTrashed()->firstOrNew(['email' => $email]);
-
-        $user->fill([
-            'name' => $name,
-            'password' => Hash::make(self::PASSWORD),
-            'role' => $role,
-            'email_verified_at' => now(),
-        ]);
-        $user->deleted_at = null;
-        $user->save();
-
-        return $user;
+        return User::query()
+            ->where('email', DatabaseSeeder::SUPERADMIN_EMAIL)
+            ->firstOrFail();
     }
 
     /**

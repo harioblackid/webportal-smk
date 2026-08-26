@@ -71,9 +71,10 @@ export const superadminRoutes: Route[] = [
     { path: '/admin/users/create', name: 'buat pengguna' },
 ];
 
+/** Must match the constants in database/seeders/DatabaseSeeder.php. */
 export const credentials = {
-    superadmin: { email: 'superadmin@demo.test', password: 'password' },
-    editor: { email: 'editor@demo.test', password: 'password' },
+    superadmin: { email: 'admin@smk.com', password: 'adminsmk99' },
+    editor: { email: 'editor@smk.com', password: 'adminsmk99' },
 };
 
 /** Where auth.setup.ts parks the signed-in browser state. */
