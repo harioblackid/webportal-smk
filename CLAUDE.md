@@ -167,9 +167,28 @@ claims to assert on.
 
 Two gotchas worth knowing:
 
-- Workers are capped at 4. `php artisan serve` is PHP's built-in server and handles **one request at
-  a time** (`PHP_CLI_SERVER_WORKERS` is Unix-only), so an unbounded matrix saturates it and produces
-  timeout failures that look exactly like real UI faults.
+- Workers are capped at 2, and the test budget is 90s. `php artisan serve` is PHP's built-in server
+  and handles **one request at a time** (`PHP_CLI_SERVER_WORKERS` is Unix-only), so an unbounded
+  matrix saturates it and produces timeout failures that look exactly like real UI faults. The
+  ceiling is roughly one page load per second — a warm document costs ~1.3s of exclusive server time
+  because CLI opcache is off and every request re-parses the framework, against ~7ms for a static
+  asset — so workers above 2 buy no throughput and only multiply each navigation's queueing delay.
+  At 4 a single `goto('/')` was measured at 13-28s of a 30s budget, which is what turned six
+  cross-browser tests red. Enabling `opcache.enable_cli` in php.ini is the way to actually raise the
+  ceiling.
+- **`waitForURL` after clicking an Inertia link needs `{ waitUntil: 'commit' }`.** The default is
+  `load`, and a client-side visit never fires another `load` for that document — the wait then rides
+  on the test timeout instead of the navigation one, so the failure names whichever step the clock
+  happened to expire on. The same applies in reverse to `page.reload()`: the appearance class is
+  printed on `<html>` by blade, so `domcontentloaded` is the honest wait and `load` just measures
+  the asset queue.
+- **On the mobile projects, touch behaviour needs `tap()` — `click()` is a mouse.** Playwright
+  dispatches real mouse events for `click()` even where `hasTouch` is set, so a Pixel 5 or iPhone 12
+  page reports `pointerType: 'mouse'` exactly as a desktop one does. The public header opens its
+  dropdowns on hover for mouse users only (the `pointerType` guard in `header.tsx`), so a `click()`
+  there walks the hover path *and* the click path in one gesture — a journey no phone user can make,
+  and the two handlers then race. Only `tap()` produces `pointerType: 'touch'`. Note `tap()` throws
+  without `hasTouch`, so it belongs inside the `navigasi mobile` block and nowhere else.
 - A stale `public/hot`, left behind when `npm run dev` is killed, makes `Vite::isRunningHot()` true.
   Inertia then posts pages to the Vite hot endpoint instead of the SSR port, nothing answers, and
   **every public page silently degrades to CSR while looking perfectly healthy**. Delete the file.

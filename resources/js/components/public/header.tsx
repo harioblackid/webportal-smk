@@ -228,9 +228,20 @@ export default function Header() {
                                     <button
                                         type="button"
                                         aria-expanded={expanded}
+                                        // Functional, not `expanded ? …`: the
+                                        // hover handler above mutates openMenu
+                                        // during the same gesture a mouse click
+                                        // completes, so the rendered `expanded`
+                                        // this closure captured may already be
+                                        // stale by the time the click lands —
+                                        // it depended on whether React had
+                                        // committed a re-render in between,
+                                        // which made the toggle a coin flip.
                                         onClick={() =>
-                                            setOpenMenu(
-                                                expanded ? null : entry.text,
+                                            setOpenMenu((current) =>
+                                                current === entry.text
+                                                    ? null
+                                                    : entry.text,
                                             )
                                         }
                                         className={cn(

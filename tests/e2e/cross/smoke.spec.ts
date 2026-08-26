@@ -142,7 +142,11 @@ test.describe('halaman detail dari data yang di-seed', () => {
         await expect(firstArticle).toBeVisible();
         await firstArticle.click();
 
-        await page.waitForURL(/\/berita\/.+/);
+        // Inertia swaps the page without a document navigation, so the default
+        // `load` here waits on a lifecycle event that never fires again for
+        // this document. `commit` is what the assertion actually needs: the
+        // history entry the client pushed once the visit resolved.
+        await page.waitForURL(/\/berita\/.+/, { waitUntil: 'commit' });
         await expect(page.locator('h1')).toHaveCount(1);
         // A detail page with no image means the fixture never attached one.
         await expect(page.locator('img').first()).toBeVisible();
@@ -160,7 +164,8 @@ test.describe('halaman detail dari data yang di-seed', () => {
         await expect(firstMajor).toBeVisible();
         await firstMajor.click();
 
-        await page.waitForURL(/\/jurusan\/.+/);
+        // Client-side visit, as above.
+        await page.waitForURL(/\/jurusan\/.+/, { waitUntil: 'commit' });
         await expect(page.locator('h1')).toHaveCount(1);
 
         expectNoFaults(faults);

@@ -27,8 +27,27 @@ export default defineConfig({
      * this project develops on Windows). Left unbounded, six browser projects
      * saturate it and tests fail on queued-request timeouts that look exactly
      * like real UI faults — the worst kind of flake to debug.
+     *
+     * Two, not four. A warm document costs ~1.3s of exclusive server time on
+     * this stack — CLI opcache is off, so every request re-parses the framework
+     * (`/robots.txt`, which touches no SSR and no database, measures the same),
+     * against ~7ms for a static asset. That puts the ceiling near one page load
+     * per second no matter how many browsers ask, so extra workers buy no
+     * throughput and only multiply each navigation's queueing delay: at four,
+     * a single `goto('/')` was taking 13-28s of a 30s test budget.
      */
-    workers: isCI ? 2 : 4,
+    workers: 2,
+
+    /*
+     * Triple the default. The budget has to cover a whole test, and the tests
+     * that walk two full document loads (toggle a theme, then reload to prove
+     * the cookie survived) pay the ~1.3s-per-document tax twice over, queued
+     * behind the other worker. 30s left no margin for a slow moment; 90s is
+     * still short enough that a genuinely hung page fails rather than hangs.
+     */
+    timeout: 90_000,
+
+    expect: { timeout: 15_000 },
     reporter: isCI
         ? [['github'], ['html', { open: 'never' }]]
         : [['list'], ['html', { open: 'never' }]],
@@ -38,6 +57,15 @@ export default defineConfig({
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         video: 'off',
+        /*
+         * Explicit, because the useful failure message is "this navigation was
+         * slow" rather than "the test ran out of time" — an unset navigation
+         * timeout inherits the test budget, so a queued `goto` swallows it whole
+         * and the error points at whatever step happened to be running when the
+         * clock expired, several lines further down.
+         */
+        navigationTimeout: 45_000,
+        actionTimeout: 15_000,
         // The site is Indonesian; a browser advertising en-US can change how
         // dates and number formatting render.
         locale: 'id-ID',

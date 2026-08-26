@@ -47,6 +47,20 @@ test.describe('tidak ada overflow horizontal', () => {
     }
 });
 
+/**
+ * Everything in here drives the page with `tap()`, never `click()`.
+ *
+ * Playwright's `click()` dispatches real mouse events even in a context with
+ * `hasTouch` — a Pixel 5 page clicked this way reports `pointerType: 'mouse'`
+ * just as a desktop one does. That matters because the header opens a dropdown
+ * on hover for mouse users only, so a `click()` here walks the hover path and
+ * then the click path in one gesture: not a journey any phone user can make,
+ * and the two handlers race. `tap()` produces genuine `pointerType: 'touch'`,
+ * which is the input this block exists to cover.
+ *
+ * Every project this block runs on has `hasTouch: true` — the skip below leaves
+ * only Pixel 5 and iPhone 12 — which `tap()` requires.
+ */
 test.describe('navigasi mobile', () => {
     test.skip(
         ({ viewport }) => (viewport?.width ?? 0) >= 1024,
@@ -63,7 +77,7 @@ test.describe('navigasi mobile', () => {
             .first();
 
         await expect(toggle).toBeVisible();
-        await toggle.click();
+        await toggle.tap();
 
         const nav = page.getByRole('navigation', { name: /navigasi utama/i });
 
@@ -74,14 +88,15 @@ test.describe('navigasi mobile', () => {
         const halaman = nav.getByRole('button', { name: /^halaman$/i });
 
         await expect(halaman).toBeVisible();
-        await halaman.click();
+        await halaman.tap();
 
         const jurusanLink = nav.getByRole('link', { name: /^jurusan$/i });
 
         await expect(jurusanLink).toBeVisible();
-        await jurusanLink.click();
+        await jurusanLink.tap();
 
-        await page.waitForURL(/\/jurusan/);
+        // Inertia visit, not a document navigation — see smoke.spec.ts.
+        await page.waitForURL(/\/jurusan/, { waitUntil: 'commit' });
         await expect(page.locator('h1')).toHaveCount(1);
     });
 
@@ -90,18 +105,19 @@ test.describe('navigasi mobile', () => {
     }) => {
         // A tap fires pointerenter before click. Without the pointerType guard
         // in the header, the hover handler opened the dropdown and the click
-        // that followed closed it again — unusable on any touch device.
+        // that followed closed it again — unusable on any touch device. The
+        // guard is what this asserts: one tap, and the dropdown stays open.
         await page.goto('/');
 
         await page
             .getByRole('button', { name: /menu|navigasi|toggle/i })
             .first()
-            .click();
+            .tap();
 
         const nav = page.getByRole('navigation', { name: /navigasi utama/i });
         const profil = nav.getByRole('button', { name: /^profil$/i });
 
-        await profil.click();
+        await profil.tap();
 
         await expect(profil).toHaveAttribute('aria-expanded', 'true');
         await expect(
@@ -148,7 +164,13 @@ test.describe('tema gelap', () => {
         // The choice is stored in a cookie that HandleAppearance replays into
         // the blade template, so it must survive a full document load — not
         // just a client-side re-render.
-        await page.reload();
+        //
+        // `domcontentloaded` is the honest wait here: the class under test is
+        // printed on <html> by the server and the inline resolver in
+        // app.blade.php runs in <head>, so both are settled long before the
+        // bundle, the fonts and the hero image finish. Waiting for `load`
+        // measured the asset queue, not the cookie.
+        await page.reload({ waitUntil: 'domcontentloaded' });
 
         const afterReload = await page.evaluate(() =>
             document.documentElement.classList.contains('dark'),
