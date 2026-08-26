@@ -41,6 +41,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->account(self::SUPERADMIN_EMAIL, 'Superadmin', UserRole::Superadmin);
         $this->account(self::EDITOR_EMAIL, 'Editor', UserRole::Editor);
+
+        // The school's own jurusan and ekstrakurikuler. Safe to run every time
+        // — it is idempotent by slug and never overwrites CMS edits.
+        $this->call(SchoolContentSeeder::class);
     }
 
     private function account(string $email, string $name, UserRole $role): User
