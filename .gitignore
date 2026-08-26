@@ -14,6 +14,10 @@
 /prd
 /docs
 
+# Belt and braces: /docs above already covers this, but a credentials file
+# must not become committable if /docs is ever un-ignored.
+secret.json
+
 
 .env
 .env.backup

@@ -24,6 +24,15 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:?APP_DIR is required}"
+
+# Absolute, not relative. The release arrives as `ssh … bash -s`, so a relative
+# path would resolve against whatever directory the SSH session happens to land
+# in — and site_user() below stats APP_DIR *after* the cd, which silently stops
+# finding the site's PHP-FPM pool once the path is relative.
+case "${APP_DIR}" in
+    /*) ;;
+    *) printf '\nrelease failed: APP_DIR must be an absolute path, got "%s".\n' "${APP_DIR}" >&2; exit 1 ;;
+esac
 RELEASE_REF="${RELEASE_REF:-origin/main}"
 SKIP_MIGRATIONS="${SKIP_MIGRATIONS:-false}"
 SKIP_SEEDERS="${SKIP_SEEDERS:-false}"
@@ -36,10 +45,6 @@ readonly MIN_PHP_ID=80300
 step() { printf '\n\033[1;34m==>\033[0m %s\n' "$1"; }
 warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$1" >&2; }
 fail() { printf '\n\033[1;31mrelease failed:\033[0m %s\n' "$1" >&2; exit 1; }
-
-cd "${APP_DIR}" || fail "APP_DIR ${APP_DIR} does not exist"
-
-[ -f artisan ] || fail "${APP_DIR} is not a Laravel root (no artisan)"
 
 # ---------------------------------------------------------------------------
 # PHP resolution
@@ -66,21 +71,33 @@ site_user() {
     id -un
 }
 
-# CloudPanel gives every site its own PHP-FPM pool, named after the site user
-# and living under the version directory chosen in the panel. The file is
-# world-readable, so this needs no sudo.
+# CloudPanel gives every site its own PHP-FPM pool, under the version directory
+# chosen in the panel. The pool is named after the SITE, though — on a real box
+# it is `pool.d/smkpgritelagasari.sch.id.conf`, not `pool.d/<site-user>.conf` —
+# so matching on the filename finds nothing. The `user =` directive inside is
+# what actually ties a pool to this account, and it works whatever the file is
+# called. Pool files are world-readable, so this needs no sudo.
 version_from_pool() {
-    local user="$1" pool
+    local user="$1" matches count
 
-    for pool in /etc/php/*/fpm/pool.d/"${user}".conf; do
-        [ -f "${pool}" ] || continue
+    matches="$(grep -lE "^[[:space:]]*user[[:space:]]*=[[:space:]]*${user}[[:space:]]*$" \
+        /etc/php/*/fpm/pool.d/*.conf 2>/dev/null || true)"
 
-        printf '%s' "${pool}" | sed -n 's#^/etc/php/\([0-9][0-9.]*\)/fpm/pool.d/.*#\1#p'
+    [ -n "${matches}" ] || return 0
+
+    count="$(printf '%s\n' "${matches}" | wc -l)"
+
+    # One account can own several sites. Guessing which pool is "the" one would
+    # be picking a PHP version at random, so say so and let PHP_VERSION decide.
+    if [ "${count}" -gt 1 ]; then
+        warn "${count} PHP-FPM pools run as '${user}':"
+        printf '%s\n' "${matches}" >&2
+        warn 'Set PHP_VERSION to say which one this site uses.'
 
         return 0
-    done
+    fi
 
-    return 0
+    printf '%s' "${matches}" | sed -n 's#^/etc/php/\([0-9][0-9.]*\)/fpm/pool.d/.*#\1#p'
 }
 
 # Fallback for layouts where the pool is not named after the site user: the
@@ -148,13 +165,43 @@ PHP_REPORTED="$("${PHP_BIN}" -r 'echo PHP_VERSION;')"
 
 step "PHP ${PHP_REPORTED} — ${PHP_BIN} (${PHP_SOURCE})"
 
-"${PHP_BIN}" -r "exit(PHP_VERSION_ID >= ${MIN_PHP_ID} ? 0 : 1);" || fail \
+php_has() { "${PHP_BIN}" -m | grep -qx "$1"; }
+php_meets_minimum() { "${PHP_BIN}" -r "exit(PHP_VERSION_ID >= ${MIN_PHP_ID} ? 0 : 1);"; }
+
+# Preflight. Reports instead of enforcing, and sits before the gates below on
+# purpose: it exists to be run while the server is still being set up, when
+# "this site is on the wrong PHP" is the answer you are looking for rather than
+# an error that stops you reading the rest of the report.
+if [ -n "${PHP_DETECT_ONLY:-}" ]; then
+    printf '\nsite user : %s\nsource    : %s\nbinary    : %s\nversion   : %s\n' \
+        "$(site_user)" "${PHP_SOURCE}" "${PHP_BIN}" "${PHP_REPORTED}"
+
+    if php_meets_minimum; then
+        printf 'php >= 8.3: yes\n'
+    else
+        printf 'php >= 8.3: NO — a release would refuse. Switch this site to 8.3+ in CloudPanel.\n'
+    fi
+
+    for ext in pdo_mysql gd; do
+        if php_has "${ext}"; then
+            printf '%-10s: present\n' "${ext}"
+        else
+            printf '%-10s: MISSING\n' "${ext}"
+        fi
+    done
+
+    printf '\n'
+
+    exit 0
+fi
+
+php_meets_minimum || fail \
     "PHP ${PHP_REPORTED} is below the 8.3 that composer.json requires. Switch the site to 8.3+ in CloudPanel, or set PHP_VERSION."
 
-"${PHP_BIN}" -m | grep -qx 'pdo_mysql' \
+php_has pdo_mysql \
     || fail "the pdo_mysql extension is missing from ${PHP_BIN} — enable it for this site in CloudPanel."
 
-"${PHP_BIN}" -m | grep -qx 'gd' \
+php_has gd \
     || warn 'the gd extension is missing — ImageProcessor cannot resize uploads, so media upload will fail.'
 
 # Everything below shells out to binaries whose shebang is `#!/usr/bin/env php`
@@ -176,17 +223,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ -n "${PHP_DETECT_ONLY:-}" ]; then
-    printf '\nsite user : %s\nsource    : %s\nbinary    : %s\nversion   : %s\nextensions: %s\n\n' \
-        "$(site_user)" "${PHP_SOURCE}" "${PHP_BIN}" "${PHP_REPORTED}" \
-        "$("${PHP_BIN}" -m | grep -xE 'pdo_mysql|gd' | tr '\n' ' ' || true)"
-
-    exit 0
-fi
-
 # ---------------------------------------------------------------------------
 # Preconditions
+#
+# Deliberately after the PHP block: PHP_DETECT_ONLY has to be usable BEFORE the
+# repository is cloned, because the site's PHP version is the thing you want to
+# confirm while there is still nothing to deploy.
 # ---------------------------------------------------------------------------
+
+cd "${APP_DIR}" || fail "APP_DIR ${APP_DIR} does not exist"
+
+[ -f artisan ] || fail "${APP_DIR} is not a Laravel root (no artisan)"
 
 [ -f .env ] || fail "${APP_DIR}/.env is missing — see docs/deployment.md §2.4"
 
@@ -206,6 +253,22 @@ fi
 # Release
 # ---------------------------------------------------------------------------
 
+# Fetched BEFORE maintenance mode on purpose. Fetching only writes to .git, not
+# to the working tree, so it needs no downtime — and the repository is private,
+# which makes "the server has no credential for origin" the single most likely
+# way a release fails. Doing it first means that failure costs no downtime at
+# all, instead of taking the site down and handing back a git auth error.
+step "Fetching ${RELEASE_REF}"
+git fetch --prune --tags origin || fail \
+    "could not fetch from origin. This repository is private, so the server needs a read-only
+    deploy key (docs/deployment.md §2.5) — check that 'ssh -T git@github.com' authenticates and
+    that the remote uses the SSH URL, not HTTPS."
+
+# Verify the target actually arrived before taking the site down, so a bad tag
+# or an unpushed sha cannot strand us in maintenance mode either.
+git rev-parse --verify --quiet "${RELEASE_REF}^{commit}" >/dev/null || fail \
+    "RELEASE_REF '${RELEASE_REF}' does not exist in the repository after fetching — is the commit pushed?"
+
 if [ -f vendor/autoload.php ]; then
     step 'Enabling maintenance mode'
     "${PHP_BIN}" artisan down --retry=15
@@ -215,9 +278,6 @@ else
     # serving traffic yet to take down.
     step 'Skipping maintenance mode (no vendor/ yet — first release)'
 fi
-
-step "Fetching ${RELEASE_REF}"
-git fetch --prune --tags origin
 
 # Editor config, CI definitions, and the deploy kit itself have no business on
 # the server; `prd/` is gitignored and never reaches the remote at all.
