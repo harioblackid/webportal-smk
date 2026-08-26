@@ -56,7 +56,17 @@ export type HeroRow = {
     title: string;
     subtitle: string | null;
     isActive: boolean;
+    sortOrder: number;
     thumbUrl: string | null;
+    /** Judul berita yang ditautkan, bila ada. */
+    postTitle: string | null;
+};
+
+/** Berita yang bisa ditautkan ke sebuah slide hero. */
+export type HeroPostOption = {
+    id: number;
+    title: string;
+    publishedAtLabel: string | null;
 };
 
 export type MajorRow = {

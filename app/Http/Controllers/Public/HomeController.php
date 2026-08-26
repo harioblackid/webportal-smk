@@ -22,20 +22,33 @@ class HomeController extends Controller
 
     public function index(): Response
     {
-        $hero = Hero::query()->active()->with('media')->first();
+        $heroes = Hero::query()
+            ->active()
+            ->with(['media', 'post'])
+            ->ordered()
+            ->get();
 
         return Inertia::render('public/home', [
-            // FR4-2: null here is a supported state, not a missing prop — the
-            // page renders its own fallback hero.
-            'hero' => $hero === null ? null : [
-                'title' => $hero->title,
-                'subtitle' => $hero->subtitle,
-                'image' => ImageResource::optional($hero->media),
-                'ctas' => array_values(array_filter([
-                    self::cta($hero->cta1_text, $hero->cta1_url),
-                    self::cta($hero->cta2_text, $hero->cta2_url),
-                ])),
-            ],
+            // FR4-2: an empty list is a supported state, not a missing prop —
+            // the page renders its own fallback hero.
+            'heroes' => $heroes
+                ->map(fn (Hero $hero) => [
+                    'id' => $hero->id,
+                    'title' => $hero->title,
+                    'subtitle' => $hero->subtitle,
+                    'image' => ImageResource::optional($hero->media),
+                    // The berita link leads, because it is the one CTA that
+                    // points at something the school just published.
+                    'postUrl' => $hero->postUrl(),
+                    'postLinkText' => $hero->postUrl() === null
+                        ? null
+                        : $hero->postLinkLabel(),
+                    'ctas' => array_values(array_filter([
+                        self::cta($hero->cta1_text, $hero->cta1_url),
+                        self::cta($hero->cta2_text, $hero->cta2_url),
+                    ])),
+                ])
+                ->all(),
             'posts' => NewsCardResource::many(
                 Post::query()
                     ->published()
@@ -47,7 +60,7 @@ class HomeController extends Controller
             'seo' => Seo::page(
                 'Beranda',
                 'Portal resmi SMK PGRI Telagasari — profil sekolah, program keahlian, berita, dan informasi PPDB.',
-                $hero?->media,
+                $heroes->first()?->media,
             ),
         ]);
     }

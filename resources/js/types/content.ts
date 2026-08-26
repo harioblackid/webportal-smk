@@ -1,10 +1,18 @@
 import type { Image } from '@/types/site';
 
-/** The active Hero from the CMS (FR4-1); null when none is active. */
-export type Hero = {
+/**
+ * One slide of the front-page hero carousel (FR4-1).
+ *
+ * `postUrl` is the tautan berita, already resolved server-side: it is null
+ * whenever the linked berita is a draft, scheduled, or withdrawn.
+ */
+export type HeroSlide = {
+    id: number;
     title: string;
     subtitle: string | null;
     image: Image | null;
+    postUrl: string | null;
+    postLinkText: string | null;
     ctas: {
         text: string;
         url: string;
