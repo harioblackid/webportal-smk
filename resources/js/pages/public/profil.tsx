@@ -76,13 +76,10 @@ export default function Profil({ sections, missions, seo }: ProfilProps) {
                     id="visi-misi"
                     tagline="Visi & misi"
                     title={visi.title}
-                    subtitle={
-                        visi.body === null ? undefined : (
-                            <span
-                                dangerouslySetInnerHTML={{ __html: visi.body }}
-                            />
-                        )
-                    }
+                    // Plain text, not markup: this lands inside the headline's
+                    // <p>, where a block element would be illegal nesting and
+                    // would fail hydration. The server strips it either way.
+                    subtitle={visi.body ?? undefined}
                     items={missions}
                     image={image(visi)}
                 />

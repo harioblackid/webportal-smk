@@ -25,12 +25,21 @@ class PageController extends Controller
         return Inertia::render('public/profil', [
             // Keyed by section rather than sent as a list: the page gives each
             // one its own widget and layout, so it asks for them by name.
-            'sections' => array_map(fn (string $key) => [
-                'key' => $key,
-                'title' => $sections->get($key)?->title,
-                'body' => $sections->get($key)?->body,
-                'image' => ImageResource::optional($sections->get($key)?->media),
-            ], ProfileSection::KEYS),
+            'sections' => array_map(function (string $key) use ($sections): array {
+                $body = $sections->get($key)?->body;
+
+                return [
+                    'key' => $key,
+                    'title' => $sections->get($key)?->title,
+                    // Stripped on the way out too, not only on the way in: a
+                    // row written before this section became plain text would
+                    // otherwise still break hydration on the live page.
+                    'body' => $body !== null && ProfileSection::isPlainText($key)
+                        ? trim(strip_tags($body))
+                        : $body,
+                    'image' => ImageResource::optional($sections->get($key)?->media),
+                ];
+            }, ProfileSection::KEYS),
             'missions' => ProfileMission::query()
                 ->ordered()
                 ->get()

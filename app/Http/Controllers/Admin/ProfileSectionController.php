@@ -61,12 +61,19 @@ class ProfileSectionController extends Controller
 
         DB::transaction(function () use ($data): void {
             foreach ($data['sections'] as $section) {
+                $key = (string) $section['key'];
+                $body = (string) ($section['body'] ?? '');
+
                 ProfileSection::query()->updateOrCreate(
-                    ['key' => (string) $section['key']],
+                    ['key' => $key],
                     [
                         'title' => (string) $section['title'],
                         // FR5-9: editor HTML is stored sanitised, never raw.
-                        'body' => HtmlSanitizer::clean((string) ($section['body'] ?? '')),
+                        // A plain-text section is stripped instead, so markup
+                        // cannot reach a slot that has nowhere legal to put it.
+                        'body' => ProfileSection::isPlainText($key)
+                            ? trim(strip_tags($body))
+                            : HtmlSanitizer::clean($body),
                         'media_id' => $section['media_id'] ?? null,
                     ],
                 );

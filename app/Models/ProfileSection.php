@@ -26,6 +26,23 @@ class ProfileSection extends Model
      */
     public const KEYS = ['sambutan', 'sejarah', 'visi', 'yayasan'];
 
+    /**
+     * Sections whose body is plain text, not rich text.
+     *
+     * The visi lead-in lands in the Steps widget's headline subtitle, which is
+     * a `<p>`. Block markup there is illegal nesting: the browser closes the
+     * outer paragraph early, the server HTML and the client tree disagree, and
+     * React throws a hydration error on every render of the page.
+     *
+     * @var list<string>
+     */
+    public const PLAIN_TEXT_KEYS = ['visi'];
+
+    public static function isPlainText(string $key): bool
+    {
+        return in_array($key, self::PLAIN_TEXT_KEYS, true);
+    }
+
     /** @return BelongsTo<Media, $this> */
     public function media(): BelongsTo
     {

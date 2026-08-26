@@ -99,7 +99,9 @@ return new class extends Migration
             [
                 'key' => 'visi',
                 'title' => 'Menjadi SMK yang menghasilkan lulusan berkarakter, kompeten, dan siap bersaing',
-                'body' => '<p>Visi itu diterjemahkan ke dalam misi berikut.</p>',
+                // Plain text: this one lands in an inline slot on the public
+                // page (ProfileSection::PLAIN_TEXT_KEYS).
+                'body' => 'Visi itu diterjemahkan ke dalam misi berikut.',
             ],
             [
                 'key' => 'yayasan',

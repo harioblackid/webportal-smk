@@ -132,3 +132,41 @@ test('the public profil page renders what the CMS holds', function () {
             ->where('missions.0.title', 'Misi pertama')
         );
 });
+
+// The visi lead-in lands inside the Steps headline's <p> on the public page.
+// Block markup there is illegal nesting, which fails React hydration on every
+// render — so it is stripped on write and on read.
+
+test('the visi lead-in is stored and delivered as plain text', function () {
+    actingAs(User::factory()->create())
+        ->put(route('admin.profile-sections.update'), profilePayload([
+            'sections' => array_map(fn (string $key) => [
+                'key' => $key,
+                'title' => 'Judul '.$key,
+                'body' => '<p>Pengantar misi.</p>',
+                'media_id' => null,
+            ], ProfileSection::KEYS),
+        ]));
+
+    expect(ProfileSection::query()->where('key', 'visi')->value('body'))
+        ->toBe('Pengantar misi.')
+        // The rich-text sections are unaffected.
+        ->and(ProfileSection::query()->where('key', 'sambutan')->value('body'))
+        ->toContain('<p>');
+
+    get(route('profil'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('sections.2.body', 'Pengantar misi.'));
+});
+
+test('markup already stored on the visi row is stripped on the way out', function () {
+    // A row written before the section became plain text must not be able to
+    // break the live page.
+    ProfileSection::query()->where('key', 'visi')->update([
+        'body' => '<p>Warisan lama.</p>',
+    ]);
+
+    get(route('profil'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('sections.2.body', 'Warisan lama.'));
+});

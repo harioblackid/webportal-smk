@@ -36,6 +36,15 @@ type ProfileFormValues = {
     missions: MissionValues[];
 };
 
+/**
+ * Mirrors ProfileSection::PLAIN_TEXT_KEYS.
+ *
+ * These render a plain Textarea, because their text lands in a slot on the
+ * public page where block markup would be illegal nesting — offering a rich
+ * text editor would promise formatting the page then has to throw away.
+ */
+const PLAIN_TEXT_KEYS = ['visi'];
+
 /** What each fixed section is called in the admin, and what it is for. */
 const LEGENDS: Record<string, { legend: string; hint: string }> = {
     sambutan: {
@@ -124,16 +133,40 @@ export default function ProfileSectionsEdit({
                             />
                         </Field>
 
-                        <RichTextEditor
-                            id={`section-${section.key}-body`}
-                            label="Isi"
-                            value={section.body}
-                            library={mediaLibrary}
-                            error={form.errors[`sections.${index}.body`]}
-                            onChange={(html) =>
-                                updateSection(index, { body: html })
-                            }
-                        />
+                        {PLAIN_TEXT_KEYS.includes(section.key) ? (
+                            <Field
+                                id={`section-${section.key}-body`}
+                                label="Isi"
+                                hint="Satu kalimat pengantar, tanpa format — teks ini tampil di dalam judul daftar misi."
+                                error={form.errors[`sections.${index}.body`]}
+                            >
+                                <Textarea
+                                    id={`section-${section.key}-body`}
+                                    rows={2}
+                                    maxLength={300}
+                                    aria-invalid={Boolean(
+                                        form.errors[`sections.${index}.body`],
+                                    )}
+                                    value={section.body}
+                                    onChange={(event) =>
+                                        updateSection(index, {
+                                            body: event.target.value,
+                                        })
+                                    }
+                                />
+                            </Field>
+                        ) : (
+                            <RichTextEditor
+                                id={`section-${section.key}-body`}
+                                label="Isi"
+                                value={section.body}
+                                library={mediaLibrary}
+                                error={form.errors[`sections.${index}.body`]}
+                                onChange={(html) =>
+                                    updateSection(index, { body: html })
+                                }
+                            />
+                        )}
 
                         <MediaPicker
                             label="Gambar pendamping"
