@@ -6,13 +6,17 @@
 # stdin so the server executes the procedure belonging to the commit being
 # released. It is also safe to run by hand:
 #
-#   APP_DIR=/home/smkpgri/main-project RELEASE_REF=origin/main bash deploy/release.sh
+#   APP_DIR=/home/smkpgri/laravel RELEASE_REF=origin/main bash deploy/release.sh
 #
 # Required environment:
-#   APP_DIR       absolute path to the Laravel root (the "main-project" of FR8-5)
+#   APP_DIR       absolute path to the Laravel checkout (the FR8-5 project root, kept
+#                 outside the document root)
 #   RELEASE_REF   commit sha, tag, or ref to deploy (default: origin/main)
 #
 # Optional:
+#   SITE_DIR                the document root nginx serves, when it is not the
+#                           Laravel public/ directory. Defaults to the CloudPanel
+#                           vhost root for this account.
 #   PHP_VERSION=8.3         pin the PHP version instead of detecting it
 #   PHP_BIN=/usr/bin/php8.3 pin the interpreter outright
 #   PHP_DETECT_ONLY=1       print the resolved PHP and exit without touching anything
@@ -45,6 +49,74 @@ readonly MIN_PHP_ID=80300
 step() { printf '\n\033[1;34m==>\033[0m %s\n' "$1"; }
 warn() { printf '\033[1;33mwarning:\033[0m %s\n' "$1" >&2; }
 fail() { printf '\n\033[1;31mrelease failed:\033[0m %s\n' "$1" >&2; exit 1; }
+
+# ---------------------------------------------------------------------------
+# Toolchain
+#
+# Every binary below is needed AFTER `artisan down`. A missing one would
+# otherwise take the site into maintenance mode and then abandon it there while
+# the release dies on `npm: command not found`, so they are gated up front.
+# ---------------------------------------------------------------------------
+
+# `git sparse-checkout set --no-cone` in the release below needs 2.25.
+readonly MIN_GIT='2.25'
+
+git_version() { git --version 2>/dev/null | sed -n 's#^git version \([0-9][0-9.]*\).*#\1#p'; }
+
+git_meets_minimum() {
+    local have
+    have="$(git_version)"
+
+    [ -n "${have}" ] || return 1
+
+    # sort -V, not a numeric or lexical compare: 2.10 is newer than 2.9, and
+    # every other ordering available to the shell gets that backwards.
+    [ "$(printf '%s\n%s\n' "${MIN_GIT}" "${have}" | sort -V | head -n 1)" = "${MIN_GIT}" ]
+}
+
+# `supervisorctl status <program>` exits non-zero for a program that is merely
+# stopped, so the exit code cannot tell "not managed" apart from "managed but
+# down". The output can: supervisor names the program either way, and only does
+# so when it knows about it.
+#
+# Three states, though, not two — "cannot tell" is a different answer from "not
+# managed". supervisord's socket is root-only out of the box (chmod=0700 in
+# supervisord.conf), so on CloudPanel the deploy user is refused even where
+# inertia-ssr is supervised perfectly well, and treating that as "unmanaged"
+# would skip the restart and serve the previous bundle forever.
+#
+#   0  managed    — supervisor named the program
+#   1  unmanaged  — supervisor answered, and does not know it
+#   2  unknown    — supervisor could not be reached at all
+ssr_supervision() {
+    local out
+
+    out="$(supervisorctl status inertia-ssr 2>&1)" || true
+
+    case "${out}" in
+        '') return 2 ;;
+        *'no such process'*) return 1 ;;
+        *refused*|*denied*|*Permission*|*'not found'*|*ERROR*) return 2 ;;
+        *) return 0 ;;
+    esac
+}
+
+require_tools() {
+    local bin missing=''
+
+    for bin in git curl "${COMPOSER_BIN}" "${NPM_BIN}"; do
+        command -v "${bin}" >/dev/null 2>&1 || missing="${missing} ${bin}"
+    done
+
+    [ -z "${missing}" ] || fail \
+        "missing from this server's PATH:${missing}
+    The release needs all of them once the site is already in maintenance mode, so it stops here
+    rather than halfway through. npm ships with Node (20+ required, docs/deployment.md §2.2);
+    COMPOSER_BIN and NPM_BIN can point the script at binaries installed outside PATH."
+
+    git_meets_minimum || fail \
+        "git $(git_version) is older than the ${MIN_GIT} that 'git sparse-checkout set --no-cone' needs."
+}
 
 # ---------------------------------------------------------------------------
 # PHP resolution
@@ -168,6 +240,92 @@ step "PHP ${PHP_REPORTED} — ${PHP_BIN} (${PHP_SOURCE})"
 php_has() { "${PHP_BIN}" -m | grep -qx "$1"; }
 php_meets_minimum() { "${PHP_BIN}" -r "exit(PHP_VERSION_ID >= ${MIN_PHP_ID} ? 0 : 1);"; }
 
+# ---------------------------------------------------------------------------
+# Document root
+#
+# APP_DIR (the Laravel checkout) and SITE_DIR (what nginx serves) are separate
+# directories: the school can then move the document root from the CloudPanel
+# GUI without the release having to be re-pointed at it. public/index.php walks
+# up from wherever it is deployed until it finds vendor/autoload.php, which is
+# the part that lets the two live apart at all.
+#
+# CloudPanel keeps /etc/nginx mode 0700 root:root, so the vhost is readable only
+# when this runs as root. Everywhere else the fallback is the account's htdocs/,
+# which is the directory CloudPanel itself renames when the domain changes —
+# so it tracks the GUI for the case that actually comes up. SITE_DIR overrides
+# both, and is the answer when the panel points at a subdirectory.
+# ---------------------------------------------------------------------------
+
+SITE_SOURCE=''
+
+site_home() {
+    local home
+    home="$(getent passwd "$(site_user)" 2>/dev/null | cut -d: -f6)"
+
+    if [ -n "${home}" ]; then
+        printf '%s' "${home}"
+
+        return
+    fi
+
+    printf '%s' "${HOME:-}"
+}
+
+site_dir_from_vhost() {
+    local home="$1"
+
+    # Anchored on the account's home so a box serving several sites cannot hand
+    # back another one's root.
+    grep -rhoE "root[[:space:]]+${home}/[^;[:space:]]+" /etc/nginx/sites-enabled/ 2>/dev/null \
+        | sed 's#^root[[:space:]]*##' \
+        | head -n 1 || true
+}
+
+site_dir_from_htdocs() {
+    local home="$1" matches count
+
+    [ -d "${home}/htdocs" ] || return 0
+
+    matches="$(find "${home}/htdocs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null || true)"
+
+    [ -n "${matches}" ] || return 0
+
+    count="$(printf '%s\n' "${matches}" | wc -l)"
+
+    # One account can host several sites. Picking one would be choosing a
+    # document root at random, so say so and let SITE_DIR decide.
+    if [ "${count}" -gt 1 ]; then
+        warn "${count} site directories under ${home}/htdocs:"
+        printf '%s\n' "${matches}" >&2
+        warn 'Set SITE_DIR to say which one this release serves.'
+
+        return 0
+    fi
+
+    printf '%s' "${matches}"
+}
+
+resolve_site_dir() {
+    if [ -n "${SITE_DIR:-}" ]; then
+        SITE_SOURCE='SITE_DIR'
+
+        return
+    fi
+
+    local home
+    home="$(site_home)"
+
+    SITE_DIR="$(site_dir_from_vhost "${home}")"
+    SITE_SOURCE='nginx vhost root'
+
+    if [ -z "${SITE_DIR}" ]; then
+        SITE_DIR="$(site_dir_from_htdocs "${home}")"
+        SITE_SOURCE="${home}/htdocs"
+    fi
+}
+
+resolve_site_dir
+
 # Preflight. Reports instead of enforcing, and sits before the gates below on
 # purpose: it exists to be run while the server is still being set up, when
 # "this site is on the wrong PHP" is the answer you are looking for rather than
@@ -189,6 +347,48 @@ if [ -n "${PHP_DETECT_ONLY:-}" ]; then
             printf '%-10s: MISSING\n' "${ext}"
         fi
     done
+
+    # The rest of the toolchain, for the same reason the PHP block exists: this
+    # probe gets run while the server is still being set up, and "npm is not
+    # installed" is exactly the kind of answer it should be able to give.
+    printf '\n'
+
+    for bin in git curl node "${COMPOSER_BIN}" "${NPM_BIN}"; do
+        if command -v "${bin}" >/dev/null 2>&1; then
+            printf '%-10s: %s\n' "${bin}" "$(command -v "${bin}")"
+        else
+            printf '%-10s: MISSING\n' "${bin}"
+        fi
+    done
+
+    if git_meets_minimum; then
+        printf 'git >= %s: yes\n' "${MIN_GIT}"
+    else
+        printf 'git >= %s: NO — sparse-checkout would fail.\n' "${MIN_GIT}"
+    fi
+
+    SSR_STATE=0
+    ssr_supervision || SSR_STATE=$?
+
+    case "${SSR_STATE}" in
+        0) printf 'supervisor: inertia-ssr is managed\n' ;;
+        1) printf 'supervisor: reachable, but has no inertia-ssr program — install deploy/supervisor/inertia-ssr.conf (§2.9).\n' ;;
+        *) printf 'supervisor: not reachable as this user, so supervision cannot be confirmed (socket is root-only, §2.9).\n' ;;
+    esac
+
+    if [ -d "${APP_DIR}" ]; then
+        printf 'APP_DIR   : %s exists\n' "${APP_DIR}"
+    else
+        printf 'APP_DIR   : %s MISSING — clone the repository there first (docs/deployment.md §2.3).\n' "${APP_DIR}"
+    fi
+
+    if [ -z "${SITE_DIR:-}" ]; then
+        printf 'SITE_DIR  : NOT DETECTED — set SITE_DIR to the CloudPanel document root.\n'
+    elif [ -d "${SITE_DIR}" ]; then
+        printf 'SITE_DIR  : %s exists (from %s)\n' "${SITE_DIR}" "${SITE_SOURCE}"
+    else
+        printf 'SITE_DIR  : %s MISSING (from %s)\n' "${SITE_DIR}" "${SITE_SOURCE}"
+    fi
 
     printf '\n'
 
@@ -231,7 +431,39 @@ trap cleanup EXIT
 # confirm while there is still nothing to deploy.
 # ---------------------------------------------------------------------------
 
-cd "${APP_DIR}" || fail "APP_DIR ${APP_DIR} does not exist"
+require_tools
+
+[ -d "${APP_DIR}" ] || fail \
+    "APP_DIR ${APP_DIR} does not exist. A release deploys into an existing checkout — clone the
+    repository there first (docs/deployment.md §2.3); this script does not create one."
+
+[ -n "${SITE_DIR:-}" ] || fail \
+    "could not work out the document root. CloudPanel keeps /etc/nginx unreadable to the site user,
+    so set SITE_DIR to the path under CloudPanel > Sites > Vhost > Document Root."
+
+case "${SITE_DIR}" in
+    /*) ;;
+    *) fail "SITE_DIR must be an absolute path, got \"${SITE_DIR}\" (from ${SITE_SOURCE})." ;;
+esac
+
+[ -d "${SITE_DIR}" ] || fail "SITE_DIR ${SITE_DIR} does not exist (from ${SITE_SOURCE})."
+
+# Laravel served from inside the document root would put .env, the database
+# credentials, and the whole source tree one HTTP request away.
+case "${APP_DIR}/" in
+    "${SITE_DIR}/"*) fail \
+        "APP_DIR ${APP_DIR} sits inside SITE_DIR ${SITE_DIR}, so the entire Laravel source — .env
+    included — would be reachable over HTTP. Move the checkout outside the document root." ;;
+esac
+
+# And the reverse, because the rsync below runs with --delete.
+case "${SITE_DIR}/" in
+    "${APP_DIR}/"*) fail \
+        "SITE_DIR ${SITE_DIR} sits inside APP_DIR ${APP_DIR}. Publishing would delete parts of the
+    checkout it is copying from." ;;
+esac
+
+cd "${APP_DIR}"
 
 [ -f artisan ] || fail "${APP_DIR} is not a Laravel root (no artisan)"
 
@@ -334,9 +566,26 @@ else
     step 'Skipping seeders (SKIP_SEEDERS=true)'
 fi
 
+# The document root is a separate directory from APP_DIR/public, so the build
+# has to be copied into it. --delete so an asset dropped from a release does not
+# linger, but never across .well-known (the panel writes ACME challenges there)
+# and never across the storage symlink created below.
+step "Publishing public/ to ${SITE_DIR}"
+rsync -a --delete \
+    --exclude '/storage' \
+    --exclude '/.well-known/' \
+    "${APP_DIR}/public/" "${SITE_DIR}/"
+
 # FR8-9. Idempotent: --force relinks instead of failing when the link is there.
 step 'Linking public storage'
 "${PHP_BIN}" artisan storage:link --force
+
+# The same link, in the directory nginx actually serves. `artisan storage:link`
+# boots through bootstrap/app.php, which carries no usePublicPath override — the
+# override lives in public/index.php and applies to web requests only — so the
+# CLI links APP_DIR/public/storage and never touches the document root.
+step 'Linking public storage into the document root'
+ln -sfn "${APP_DIR}/storage/app/public" "${SITE_DIR}/storage"
 
 # FR8-10.
 step 'Building production caches'
@@ -346,10 +595,38 @@ step 'Building production caches'
 "${PHP_BIN}" artisan event:cache
 
 # FR8-11. Asking the SSR process to stop is enough — supervisor restarts it
-# within seconds (US-026) and this needs no sudo on the deploy user. If SSR is
-# not managed by supervisor, this stops it for good; see deploy/supervisor/.
+# within seconds (US-026) and this needs no sudo on the deploy user.
+#
+# Only where supervisor positively does NOT know the program is stopping it the
+# wrong move: unmanaged, stop-ssr stops it for good, and every public page then
+# degrades to CSR while still looking perfectly healthy.
 step 'Restarting the SSR process'
-"${PHP_BIN}" artisan inertia:stop-ssr || true
+
+SSR_STATE=0
+ssr_supervision || SSR_STATE=$?
+
+case "${SSR_STATE}" in
+    0) SSR_SUPERVISION=managed ;;
+    1) SSR_SUPERVISION=unmanaged ;;
+    *) SSR_SUPERVISION=unknown ;;
+esac
+
+if [ "${SSR_SUPERVISION}" = unmanaged ]; then
+    warn "supervisor answered but has no 'inertia-ssr' program, so nothing would bring SSR back"
+    warn 'after stopping it. Leaving the running renderer alone — it still serves the PREVIOUS'
+    warn 'build. Install deploy/supervisor/inertia-ssr.conf (docs/deployment.md §2.9).'
+else
+    # "unknown" stops SSR too, deliberately. If supervisor does manage it and we
+    # skip the stop, the old renderer keeps serving the previous bundle and
+    # nothing ever says so; if it does not, the health gate below fails loudly.
+    # A loud failure is worth more here than a silent stale one.
+    [ "${SSR_SUPERVISION}" = managed ] || warn \
+        'could not reach supervisor as this user — its socket is root-only unless supervisord.conf
+    sets chown/chmod (docs/deployment.md §2.9). Stopping SSR anyway; the health check below is the
+    real gate.'
+
+    "${PHP_BIN}" artisan inertia:stop-ssr || true
+fi
 
 # FR8-12. Workers keep the old code in memory until told to finish.
 step 'Restarting queue workers'
@@ -364,12 +641,33 @@ fi
 # Supervisor's startsecs plus the Node boot; below this the smoke check in CI
 # can hit the window where SSR is not listening yet and score a false failure.
 step 'Waiting for SSR to answer on 127.0.0.1:13714'
+
+SSR_UP=false
+
 for _ in $(seq 1 20); do
     if curl --silent --output /dev/null --max-time 2 http://127.0.0.1:13714/health; then
+        SSR_UP=true
+
         break
     fi
     sleep 1
 done
+
+# Falling out of that loop used to print "release complete" in green. But an
+# Inertia app with nothing listening on 13714 does not error — it quietly serves
+# every public page as CSR, which is exactly the regression prd-06 exists to
+# prevent. A release that ends that way has failed, so report it as one. The
+# site is already out of maintenance mode, so this leaves it serving traffic.
+if [ "${SSR_UP}" != true ]; then
+    [ "${SSR_SUPERVISION}" = managed ] || fail \
+        "SSR is not answering on 127.0.0.1:13714 and nothing was confirmed to supervise it, so every
+    public page is being served as CSR. Install deploy/supervisor/inertia-ssr.conf (US-026,
+    docs/deployment.md §2.9)."
+
+    fail "SSR never came back on 127.0.0.1:13714. Supervisor should have restarted it — check
+    ~/logs/inertia-ssr.log and 'supervisorctl status inertia-ssr'. The site is up, but every public
+    page is being served as CSR."
+fi
 
 printf '\n\033[1;32mrelease complete\033[0m — %s on PHP %s\n' \
     "$(git rev-parse --short HEAD)" "${PHP_REPORTED}"

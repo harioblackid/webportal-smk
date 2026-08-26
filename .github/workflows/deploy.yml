@@ -64,6 +64,51 @@ jobs:
             echo "::warning::Browser tests on this commit are '${browser}' — releasing anyway."
           fi
 
+      # GitHub creates the `production` environment automatically the first time
+      # this workflow names it — and creates it EMPTY. Every secret and variable
+      # below then expands to '', ssh is handed "@" as its destination, and the
+      # job dies on a usage dump that names none of the settings that are
+      # actually missing. Check them by name first, while the message can still
+      # say something useful.
+      - name: Check the production environment is configured
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          APP_DIR: ${{ vars.APP_DIR }}
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          missing=''
+
+          for name in SSH_HOST SSH_USER SSH_PRIVATE_KEY SSH_KNOWN_HOSTS APP_DIR APP_URL; do
+            if [ -z "${!name}" ]; then
+              missing="${missing} ${name}"
+            fi
+          done
+
+          if [ -n "${missing}" ]; then
+            echo "::error::The 'production' environment is missing:${missing}"
+            echo "::error::SSH_* are environment secrets, APP_DIR and APP_URL environment variables. See docs/deployment.md §2.6 and §2.7."
+            exit 1
+          fi
+
+          # release.sh refuses a relative APP_DIR anyway, but it would do so
+          # after the SSH round trip and after the CI gate has already passed.
+          case "${APP_DIR}" in
+            /*) ;;
+            *) echo "::error::APP_DIR must be an absolute path on the VPS, got '${APP_DIR}'."; exit 1 ;;
+          esac
+
+          # SSH_KNOWN_HOSTS is generated with `ssh-keyscan <host>`, and the name
+          # it was scanned under is the name it matches. Scanning the IP and
+          # then connecting by hostname fails host key verification with an
+          # error that reads like a compromised server.
+          if ! printf '%s\n' "${SSH_KNOWN_HOSTS}" | grep -q "${SSH_HOST}"; then
+            echo "::error::SSH_KNOWN_HOSTS has no entry for '${SSH_HOST}'. Regenerate it with: ssh-keyscan -p <port> ${SSH_HOST}"
+            exit 1
+          fi
+
       # Done inline rather than through a third-party action: one less pinned
       # dependency holding the deploy key.
       - name: Configure SSH
@@ -87,6 +132,11 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PORT: ${{ vars.SSH_PORT || '22' }}
           APP_DIR: ${{ vars.APP_DIR }}
+          # Optional. Left unset, release.sh resolves the document root from the
+          # nginx vhost, or from the single site directory under the account's
+          # htdocs/ — so moving it in the CloudPanel GUI needs no change here.
+          # Set it only when the panel points at a subdirectory.
+          SITE_DIR: ${{ vars.SITE_DIR }}
           # Optional override. Left unset, release.sh reads the version
           # CloudPanel assigned to this site from its PHP-FPM pool rather than
           # trusting `php` on PATH, which is the system-wide symlink.
@@ -94,9 +144,15 @@ jobs:
           SKIP_MIGRATIONS: ${{ inputs.skip_migrations }}
           SKIP_SEEDERS: ${{ inputs.skip_seeders }}
         run: |
-          ssh -i ~/.ssh/id_deploy -p "${SSH_PORT}" -o IdentitiesOnly=yes \
+          # BatchMode so a key the server does not accept fails immediately
+          # instead of blocking on a password prompt until the job times out,
+          # and StrictHostKeyChecking spelled out rather than left to the
+          # default — SSH_KNOWN_HOSTS is the whole point of pinning the host.
+          ssh -i ~/.ssh/id_deploy -p "${SSH_PORT}" \
+            -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o ConnectTimeout=30 \
             "${SSH_USER}@${SSH_HOST}" \
-            "APP_DIR='${APP_DIR}' RELEASE_REF='${GITHUB_SHA}' PHP_VERSION='${PHP_VERSION}' SKIP_MIGRATIONS='${SKIP_MIGRATIONS}' SKIP_SEEDERS='${SKIP_SEEDERS}' bash -s" \
+            "APP_DIR='${APP_DIR}' SITE_DIR='${SITE_DIR}' RELEASE_REF='${GITHUB_SHA}' PHP_VERSION='${PHP_VERSION}' SKIP_MIGRATIONS='${SKIP_MIGRATIONS}' SKIP_SEEDERS='${SKIP_SEEDERS}' bash -s" \
             < deploy/release.sh
 
       # FR6-1 / US-025: a release that boots but silently degrades to CSR is the
