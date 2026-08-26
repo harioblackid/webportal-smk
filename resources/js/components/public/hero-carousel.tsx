@@ -81,6 +81,8 @@ export default function HeroCarousel({ slides, tagline }: HeroCarouselProps) {
             subtitle={item.subtitle ?? undefined}
             image={item.image}
             eager={index === 0}
+            // Exactly one h1 per page, no matter how many slides are active.
+            as={index === 0 ? 'h1' : 'h2'}
             actions={
                 <>
                     {item.postUrl === null ? null : (

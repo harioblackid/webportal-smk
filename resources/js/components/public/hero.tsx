@@ -12,6 +12,13 @@ type HeroProps = {
     image?: Image | null;
     /** The first slide is the LCP candidate and must not be lazy. */
     eager?: boolean;
+    /**
+     * Heading level for the title. Only the first slide of a carousel may be
+     * the page's `h1` — three of them on one page is three page titles, which
+     * is an SEO and screen-reader fault, not a styling detail. Later slides
+     * render an `h2` that looks identical.
+     */
+    as?: 'h1' | 'h2';
     id?: string;
 };
 
@@ -34,6 +41,7 @@ export default function Hero({
     actions,
     image,
     eager = false,
+    as: Heading = 'h1',
     id,
 }: HeroProps) {
     return (
@@ -92,9 +100,9 @@ export default function Hero({
                             </p>
                         )}
 
-                        <h1 className="mb-4 font-heading text-4xl leading-tight font-bold tracking-tighter text-balance drop-shadow-sm sm:text-5xl md:text-6xl">
+                        <Heading className="mb-4 font-heading text-4xl leading-tight font-bold tracking-tighter text-balance drop-shadow-sm sm:text-5xl md:text-6xl">
                             {title}
-                        </h1>
+                        </Heading>
 
                         <div className="mx-auto max-w-3xl">
                             {subtitle && (
