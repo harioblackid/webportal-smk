@@ -29,6 +29,7 @@ class SitemapController extends Controller
         'identitas' => 'identitas',
         'spektrum' => 'spektrum',
         'gallery' => 'gallery.index',
+        'ekskul' => 'ekskul',
     ];
 
     public function sitemap(): Response

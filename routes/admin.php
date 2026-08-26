@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CurriculumSpectrumController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExtracurricularController;
 use App\Http\Controllers\Admin\GalleryAlbumController;
 use App\Http\Controllers\Admin\HeroController;
 use App\Http\Controllers\Admin\MajorController;
@@ -58,6 +59,10 @@ Route::put('gallery-albums/visibility', [GalleryAlbumController::class, 'visibil
 Route::resource('gallery-albums', GalleryAlbumController::class)
     ->parameters(['gallery-albums' => 'album'])
     ->except('show');
+
+Route::put('extracurriculars/visibility', [ExtracurricularController::class, 'visibility'])
+    ->name('extracurriculars.visibility');
+Route::resource('extracurriculars', ExtracurricularController::class)->except('show');
 
 // Without this, Laravel singularises the parameter to {medium}.
 Route::resource('media', MediaController::class)

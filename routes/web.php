@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Public\CurriculumController;
+use App\Http\Controllers\Public\ExtracurricularController;
 use App\Http\Controllers\Public\GalleryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MajorController;
@@ -41,6 +42,10 @@ Route::middleware('page:gallery')->group(function (): void {
     Route::get('galeri', [GalleryController::class, 'index'])->name('gallery.index');
     Route::get('galeri/{slug}', [GalleryController::class, 'show'])->name('gallery.show');
 });
+
+Route::get('ekstrakurikuler', ExtracurricularController::class)
+    ->middleware('page:ekskul')
+    ->name('ekskul');
 
 Route::get('jurusan', [MajorController::class, 'index'])->name('majors.index');
 Route::get('jurusan/{slug}', [MajorController::class, 'show'])->name('majors.show');

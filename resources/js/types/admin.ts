@@ -140,3 +140,14 @@ export type GalleryAlbumRow = {
     itemsCount: number;
     thumbUrl: string | null;
 };
+
+export type ExtracurricularRow = {
+    id: number;
+    name: string;
+    slug: string;
+    pembina: string | null;
+    jadwal: string | null;
+    sortOrder: number;
+    isActive: boolean;
+    thumbUrl: string | null;
+};

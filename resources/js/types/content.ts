@@ -110,3 +110,14 @@ export type GalleryPhoto = {
     caption: string | null;
     image: Image | null;
 };
+
+export type ExtracurricularCard = {
+    id: number;
+    name: string;
+    slug: string;
+    /** Sanitised rich text; rendered through `prose`. */
+    description: string | null;
+    pembina: string | null;
+    jadwal: string | null;
+    image: Image | null;
+};
