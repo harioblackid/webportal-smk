@@ -12,13 +12,10 @@ use function Pest\Laravel\get;
 function settingPayload(array $overrides = []): array
 {
     return array_merge([
-        'school_name' => 'SMK PGRI Telagasari',
         'tagline' => 'Terampil, Mandiri, Berakhlak',
         'logo_media_id' => null,
-        'contact_address' => 'Jl. Raya Telagasari, Karawang',
-        'contact_phone' => '0267123456',
         'contact_whatsapp' => '081234567890',
-        'contact_email' => 'info@smkpgritelagasari.sch.id',
+        'maps_mode' => 'link',
         'maps_embed' => '',
         'ppdb_enabled' => false,
         'ppdb_url' => '',
@@ -39,19 +36,19 @@ test('an editor cannot reach the settings page or save it', function () {
 
 // FR5-19 — perubahan Setting langsung tercermin di situs publik.
 
-test('identity and contact changes reach the public pages immediately', function () {
+test('settings changes reach the public pages immediately', function () {
     actingAs(User::factory()->superadmin()->create())
         ->put(route('admin.settings.update'), settingPayload([
-            'school_name' => 'SMK PGRI Telagasari',
-            'contact_email' => 'humas@example.test',
+            'tagline' => 'Terampil dan Mandiri',
+            'contact_whatsapp' => '081234567890',
         ]))
         ->assertRedirect(route('admin.settings.edit'));
 
     get(route('home'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('site.name', 'SMK PGRI Telagasari')
-            ->where('site.contact.email', 'humas@example.test'));
+            ->where('site.tagline', 'Terampil dan Mandiri')
+            ->where('site.contact.whatsappHref', 'https://wa.me/6281234567890'));
 });
 
 test('the ppdb banner can be switched on with its target', function () {
@@ -120,14 +117,14 @@ test('a malformed measurement id is rejected', function () {
 });
 
 test('the settings form is prefilled from the stored values', function () {
-    Setting::put('school_name', 'SMK PGRI Telagasari');
+    Setting::put('tagline', 'Terampil, Mandiri, Berakhlak');
 
     actingAs(User::factory()->superadmin()->create())
         ->get(route('admin.settings.edit'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('admin/settings/edit')
-            ->where('settings.school_name', 'SMK PGRI Telagasari')
+            ->where('settings.tagline', 'Terampil, Mandiri, Berakhlak')
             ->has('mediaLibrary'));
 });
 

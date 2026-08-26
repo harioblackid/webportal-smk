@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\CurriculumSpectrum;
 use App\Models\Hero;
 use App\Models\Major;
 use App\Models\Media;
@@ -38,15 +39,18 @@ class DemoClearCommand extends Command
     {
         $posts = Post::withTrashed()->where('slug', 'like', DemoSeeder::MARKER.'%')->get();
         $media = Media::query()->where('filename', 'like', DemoSeeder::MARKER.'%')->get();
+        $spectra = CurriculumSpectrum::query()
+            ->where('slug', 'like', DemoSeeder::MARKER.'%')
+            ->get();
 
-        if ($posts->isEmpty() && $media->isEmpty()) {
+        if ($posts->isEmpty() && $media->isEmpty() && $spectra->isEmpty()) {
             $this->components->info('Tidak ada konten demo yang perlu dihapus.');
 
             return self::SUCCESS;
         }
 
         $confirmed = (bool) $this->option('force') || $this->confirm(
-            "Hapus {$posts->count()} berita dan {$media->count()} media demo?",
+            "Hapus {$posts->count()} berita, {$spectra->count()} spektrum, dan {$media->count()} media demo?",
             true,
         );
 
@@ -62,13 +66,18 @@ class DemoClearCommand extends Command
             $post->forceDelete();
         }
 
+        // Subjects go with them: the foreign key cascades on delete.
+        foreach ($spectra as $spectrum) {
+            $spectrum->delete();
+        }
+
         foreach ($media as $item) {
             ImageProcessor::forget($item->path, $item->thumb_path);
             $item->delete();
         }
 
         $this->components->info(
-            "Konten demo dihapus: {$posts->count()} berita, {$media->count()} media."
+            "Konten demo dihapus: {$posts->count()} berita, {$spectra->count()} spektrum, {$media->count()} media."
         );
 
         return self::SUCCESS;

@@ -16,13 +16,30 @@ test('guests are redirected to login from every admin route', function (string $
     'categories' => fn () => route('admin.categories.index'),
     'heroes' => fn () => route('admin.heroes.index'),
     'media' => fn () => route('admin.media.index'),
+    'profile-sections' => fn () => route('admin.profile-sections.edit'),
+    'curriculum-spectra' => fn () => route('admin.curriculum-spectra.index'),
+    'gallery-albums' => fn () => route('admin.gallery-albums.index'),
+    'extracurriculars' => fn () => route('admin.extracurriculars.index'),
     'majors' => fn () => route('admin.majors.index'),
+    'school-identity' => fn () => route('admin.school-identity.edit'),
     'settings' => fn () => route('admin.settings.edit'),
     'users' => fn () => route('admin.users.index'),
 ]);
 
+// The page toggles are writes, so a guest must not reach them either — and a
+// redirect, not a silent 200, is what proves the auth group covers them.
+
+test('guests are redirected away from the page visibility toggles', function (string $route) {
+    $this->put($route, ['enabled' => false])->assertRedirect(route('login'));
+})->with([
+    'spektrum' => fn () => route('admin.curriculum-spectra.visibility'),
+    'gallery' => fn () => route('admin.gallery-albums.visibility'),
+    'ekskul' => fn () => route('admin.extracurriculars.visibility'),
+]);
+
 test('an editor reaches every shared module', function (string $name) {
-    // prd-05 §2: berita, kategori, hero, and media are open to both roles.
+    // prd-05 §2: berita, kategori, hero, and media are open to both roles, as
+    // is every page whose content is editorial rather than configuration.
     actingAs(User::factory()->create())
         ->get(route($name))
         ->assertOk();
@@ -31,7 +48,15 @@ test('an editor reaches every shared module', function (string $name) {
     'admin.posts.create',
     'admin.categories.index',
     'admin.heroes.index',
+    'admin.heroes.create',
     'admin.media.index',
+    'admin.profile-sections.edit',
+    'admin.curriculum-spectra.index',
+    'admin.curriculum-spectra.create',
+    'admin.gallery-albums.index',
+    'admin.gallery-albums.create',
+    'admin.extracurriculars.index',
+    'admin.extracurriculars.create',
 ]);
 
 test('a signed-in editor reaches the dashboard', function () {
@@ -50,6 +75,8 @@ test('an editor hitting a superadmin route gets 403, not a redirect', function (
 })->with([
     'admin.majors.index',
     'admin.majors.create',
+    // Identity is what the site claims the school is, not editorial copy.
+    'admin.school-identity.edit',
     'admin.settings.edit',
     'admin.users.index',
     'admin.users.create',
@@ -74,7 +101,12 @@ test('every admin response carries the noindex header', function (string $name) 
     'admin.categories.index',
     'admin.heroes.index',
     'admin.media.index',
+    'admin.profile-sections.edit',
+    'admin.curriculum-spectra.index',
+    'admin.gallery-albums.index',
+    'admin.extracurriculars.index',
     'admin.majors.index',
+    'admin.school-identity.edit',
     'admin.settings.edit',
     'admin.users.index',
 ]);

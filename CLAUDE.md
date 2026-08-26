@@ -69,6 +69,32 @@ but change the PHP route or controller to change the output — hand edits are s
 `resources/js/types/global.d.ts` via `declare module '@inertiajs/core'`. Adding a shared prop
 requires editing both, or it is untyped on the React side.
 
+### Two key-value tables, not one
+`settings` holds site configuration (tagline, logo, PPDB, GA4, `maps_mode`, the four
+`page_*_enabled` toggles). `school_id` holds the school's official identity — the Dapodik-style
+record: name, NPSN, jenjang, address, phone, email, akreditasi, and so on.
+
+They are not interchangeable. `App\Support\SchoolIdentityFields` declares the identity catalogue
+once, and the admin form, the validation rules, and the public page are all generated from it —
+adding a field there is the whole change. `SiteSettings::share()` reads the school name, address,
+phone, and email from `school_id`, so the header, footer, and JSON-LD cannot disagree with the
+Identitas page. Do not reintroduce `school_name` or `contact_*` keys into `settings`.
+
+### Switchable public pages
+Four public pages can be switched off from the CMS: Identitas Sekolah, Spektrum Kurikulum,
+Gallery, Ekstrakurikuler (`App\Support\PageVisibility::PAGES`).
+
+Off means gone, not merely unlinked. `App\Http\Middleware\EnsurePageEnabled` (aliased `page`, e.g.
+`->middleware('page:gallery')`) answers **404**, the navbar and footer drop the item by reading
+`site.pages`, and `SitemapController` stops advertising the URL. A page that is only hidden from
+the menu still gets indexed while the school believes it is unpublished — so any new toggled page
+needs all three, not just the menu.
+
+On the admin side the toggle rides in the same form as the fields (`<PageToggle>` plus a
+`<fieldset disabled>`), and `<UnsavedGuard>` warns before an Inertia visit or a reload discards
+unsaved changes. It intercepts **GET visits only** — a guard that blocked the form's own PUT would
+make saving impossible.
+
 ### Other
 - Exceptions render as JSON only for `api/*` or `expectsJson()` (`bootstrap/app.php`).
 - `@/*` aliases `resources/js/*` (tsconfig paths + eslint import resolver).
@@ -141,6 +167,10 @@ creates with a `demo-` prefix (accounts live on `@demo.test`).
 `storage/app/private/demo-images/.original-refs.json`. **These are stock photos of other schools —
 test material, not release content.** Real photos must replace them before the site goes live.
 
+The seeder also creates one `demo-` spektrum kurikulum, using the ordinary Kurikulum Merdeka SMK
+structure. Same rule: it is a worked example so the page has something to render, not the school's
+actual mata pelajaran list.
+
 ## Locked product decisions
 
 From the brief in `prd-00-index.md`; do not re-litigate these without being asked:
@@ -148,7 +178,17 @@ From the brief in `prd-00-index.md`; do not re-litigate these without being aske
 - Two roles, **Superadmin** and **Editor**. Enforcement is server-side (middleware/policy) —
   hiding UI is not sufficient; an Editor hitting a Superadmin route must receive 403 (`FR5-2`,
   `FR5-15a`). Editors may publish directly.
-- CMS-managed: Hero, Berita/Pengumuman, Jurusan. Profil and Kontak are static pages in code.
+- CMS-managed: Hero, Berita/Pengumuman, Jurusan, Visi Misi, Identitas Sekolah, Spektrum
+  Kurikulum, Gallery, Ekstrakurikuler. Only Kontak's copy is still fixed in code — its address,
+  phone, email, and map all come from the CMS.
+- **The hero is a carousel, not a single slide.** The `FR5-13` / `FR7-6` rule that only one hero
+  may be active was retired on the school's explicit instruction. Up to `Hero::MAX_ACTIVE` (3)
+  heroes may be active at once; they render in `sort_order`. The cap is a performance budget for
+  the LCP screen and is enforced by `App\Rules\MaxActiveHeroes`, not by the schema.
+- Each hero may be linked to one `Post`; the slide then shows a "Lihat selengkapnya" button.
+  Note `Post` uses `SoftDeletes`, so the `nullOnDelete` foreign key does **not** fire when a berita
+  is deleted from the CMS — `Hero::postUrl()` is the only thing preventing a link to withdrawn
+  content.
 - Bilingual ID/EN for UI labels only; content stays Indonesian.
 - Mobile-first (~80% mobile traffic). Targets: LCP < 2.5s, CLS < 0.1, Lighthouse mobile ≥ 90.
 - **The `prd-03` design system has been superseded** — see "Design systems" below. Its palette

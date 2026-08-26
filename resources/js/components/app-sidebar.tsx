@@ -1,13 +1,18 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BookOpen,
     ExternalLink,
     FileText,
+    GalleryHorizontal,
     GraduationCap,
     Images,
     LayoutDashboard,
     LayoutTemplate,
+    School,
+    ScrollText,
     Settings,
     Tags,
+    Trophy,
     Users,
 } from 'lucide-react';
 
@@ -29,10 +34,15 @@ import { toUrl } from '@/lib/utils';
 import { home } from '@/routes';
 import { dashboard } from '@/routes/admin';
 import { index as categoriesIndex } from '@/routes/admin/categories';
+import { index as spectraIndex } from '@/routes/admin/curriculum-spectra';
+import { index as ekskulIndex } from '@/routes/admin/extracurriculars';
+import { index as albumsIndex } from '@/routes/admin/gallery-albums';
 import { index as heroesIndex } from '@/routes/admin/heroes';
 import { index as majorsIndex } from '@/routes/admin/majors';
 import { index as mediaIndex } from '@/routes/admin/media';
 import { index as postsIndex } from '@/routes/admin/posts';
+import { edit as profileSectionsEdit } from '@/routes/admin/profile-sections';
+import { edit as schoolIdentityEdit } from '@/routes/admin/school-identity';
 import { edit as settingsEdit } from '@/routes/admin/settings';
 import { index as usersIndex } from '@/routes/admin/users';
 import type { NavItem } from '@/types';
@@ -50,11 +60,25 @@ const contentNavItems: AdminNavItem[] = [
     { title: 'Media', href: mediaIndex(), icon: Images },
 ];
 
+/** The public pages whose content the CMS owns (prd-04 §2, restructured). */
+const pageNavItems: AdminNavItem[] = [
+    { title: 'Visi Misi', href: profileSectionsEdit(), icon: ScrollText },
+    { title: 'Spektrum Kurikulum', href: spectraIndex(), icon: BookOpen },
+    { title: 'Gallery', href: albumsIndex(), icon: GalleryHorizontal },
+    { title: 'Ekstrakurikuler', href: ekskulIndex(), icon: Trophy },
+];
+
 const manageNavItems: AdminNavItem[] = [
     {
         title: 'Jurusan',
         href: majorsIndex(),
         icon: GraduationCap,
+        superadmin: true,
+    },
+    {
+        title: 'Identitas Sekolah',
+        href: schoolIdentityEdit(),
+        icon: School,
         superadmin: true,
     },
     {
@@ -90,6 +114,7 @@ export function AppSidebar() {
             }));
 
     const manage = withActive(manageNavItems);
+    const pages = withActive(pageNavItems);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -107,6 +132,8 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain label="Konten" items={withActive(contentNavItems)} />
+
+                {pages.length > 0 && <NavMain label="Halaman" items={pages} />}
 
                 {manage.length > 0 && <NavMain label="Kelola" items={manage} />}
             </SidebarContent>

@@ -1,20 +1,68 @@
 import { Link, usePage } from '@inertiajs/react';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { buttonClasses } from '@/components/public/button';
 import ToggleMenu from '@/components/public/toggle-menu';
 import ToggleTheme from '@/components/public/toggle-theme';
-import { cn } from '@/lib/utils';
-import { home, kontak, profil } from '@/routes';
+import { cn, toUrl } from '@/lib/utils';
+import { ekskul, home, identitas, kontak, profil, spektrum } from '@/routes';
+import { index as galleryIndex } from '@/routes/gallery';
 import { index as majorsIndex } from '@/routes/majors';
 import { index as postsIndex } from '@/routes/posts';
+import type { Site } from '@/types';
 
-const links = [
-    { text: 'Beranda', href: home() },
-    { text: 'Profil', href: profil() },
-    { text: 'Jurusan', href: majorsIndex() },
-    { text: 'Berita', href: postsIndex() },
-    { text: 'Kontak', href: kontak() },
+type NavLink = {
+    text: string;
+    href: string;
+    /** Which site.pages flag decides whether this item renders at all. */
+    page?: keyof Site['pages'];
+};
+
+type NavEntry = NavLink & {
+    children?: NavLink[];
+};
+
+/**
+ * The public menu (prd-04 §2, restructured).
+ *
+ * A parent with children is a dropdown; its own href is the first thing under
+ * it, so tapping the parent on a phone still goes somewhere sensible.
+ */
+const entries: NavEntry[] = [
+    { text: 'Beranda', href: toUrl(home()) },
+    {
+        text: 'Profil',
+        href: toUrl(profil()),
+        children: [
+            { text: 'Visi Misi', href: toUrl(profil()) },
+            {
+                text: 'Identitas Sekolah',
+                href: toUrl(identitas()),
+                page: 'identitas',
+            },
+            {
+                text: 'Spektrum Kurikulum',
+                href: toUrl(spektrum()),
+                page: 'spektrum',
+            },
+        ],
+    },
+    {
+        text: 'Halaman',
+        href: toUrl(majorsIndex()),
+        children: [
+            { text: 'Jurusan', href: toUrl(majorsIndex()) },
+            { text: 'Gallery', href: toUrl(galleryIndex()), page: 'gallery' },
+            {
+                text: 'Ekstrakurikuler',
+                href: toUrl(ekskul()),
+                page: 'ekskul',
+            },
+        ],
+    },
+    { text: 'Berita', href: toUrl(postsIndex()) },
+    { text: 'Kontak', href: toUrl(kontak()) },
 ];
 
 /**
@@ -26,6 +74,7 @@ const links = [
 export default function Header() {
     const { url, props } = usePage();
     const [open, setOpen] = useState(false);
+    const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [scrolled, setScrolled] = useState(false);
     const [lastUrl, setLastUrl] = useState(url);
 
@@ -35,6 +84,7 @@ export default function Header() {
     if (url !== lastUrl) {
         setLastUrl(url);
         setOpen(false);
+        setOpenMenu(null);
     }
 
     useEffect(() => {
@@ -52,8 +102,34 @@ export default function Header() {
         return () => document.body.classList.remove('overflow-hidden');
     }, [open]);
 
+    // Escape closes a dropdown before it closes the panel, which is the order
+    // a keyboard user expects when both are open.
+    useEffect(() => {
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setOpenMenu(null);
+            }
+        };
+
+        document.addEventListener('keydown', onKey);
+
+        return () => document.removeEventListener('keydown', onKey);
+    }, []);
+
     const isCurrent = (href: string) =>
         href === '/' ? url === '/' : url === href || url.startsWith(`${href}/`);
+
+    // Items whose page is switched off never render. The route answers 404 for
+    // them anyway — this only keeps the menu honest about what exists.
+    const visible = (links: NavLink[]) =>
+        links.filter(
+            (link) => link.page === undefined || props.site.pages[link.page],
+        );
+
+    const isBranchCurrent = (entry: NavEntry) =>
+        entry.children === undefined
+            ? isCurrent(entry.href)
+            : visible(entry.children).some((child) => isCurrent(child.href));
 
     return (
         <header
@@ -99,25 +175,98 @@ export default function Header() {
                     )}
                 >
                     <ul className="flex w-full flex-col text-xl font-medium tracking-[0.01rem] md:w-auto md:flex-row md:justify-center md:self-center md:text-[0.9375rem]">
-                        {links.map((link) => (
-                            <li key={link.text}>
-                                <Link
-                                    href={link.href}
-                                    aria-current={
-                                        isCurrent(link.href.url)
-                                            ? 'page'
-                                            : undefined
-                                    }
-                                    className={cn(
-                                        'flex items-center px-4 py-3 whitespace-nowrap hover:text-aw-primary dark:hover:text-white',
-                                        isCurrent(link.href.url) &&
-                                            'text-aw-primary dark:text-white',
-                                    )}
+                        {entries.map((entry) => {
+                            const children =
+                                entry.children === undefined
+                                    ? []
+                                    : visible(entry.children);
+
+                            const active = isBranchCurrent(entry);
+
+                            if (children.length === 0) {
+                                return (
+                                    <li key={entry.text}>
+                                        <Link
+                                            href={entry.href}
+                                            aria-current={
+                                                active ? 'page' : undefined
+                                            }
+                                            className={cn(
+                                                'flex items-center px-4 py-3 whitespace-nowrap hover:text-aw-primary dark:hover:text-white',
+                                                active &&
+                                                    'text-aw-primary dark:text-white',
+                                            )}
+                                        >
+                                            {entry.text}
+                                        </Link>
+                                    </li>
+                                );
+                            }
+
+                            const expanded = openMenu === entry.text;
+
+                            return (
+                                <li
+                                    key={entry.text}
+                                    className="md:relative"
+                                    onMouseEnter={() => setOpenMenu(entry.text)}
+                                    onMouseLeave={() => setOpenMenu(null)}
                                 >
-                                    {link.text}
-                                </Link>
-                            </li>
-                        ))}
+                                    <button
+                                        type="button"
+                                        aria-expanded={expanded}
+                                        onClick={() =>
+                                            setOpenMenu(
+                                                expanded ? null : entry.text,
+                                            )
+                                        }
+                                        className={cn(
+                                            'flex w-full items-center gap-1 px-4 py-3 whitespace-nowrap hover:text-aw-primary md:w-auto dark:hover:text-white',
+                                            active &&
+                                                'text-aw-primary dark:text-white',
+                                        )}
+                                    >
+                                        {entry.text}
+                                        <ChevronDown
+                                            className={cn(
+                                                'size-4 transition-transform',
+                                                expanded && 'rotate-180',
+                                            )}
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+
+                                    <ul
+                                        className={cn(
+                                            'text-base md:absolute md:top-full md:left-0 md:min-w-56 md:rounded-lg md:border md:border-gray-200 md:bg-page md:py-2 md:shadow-lg md:dark:border-slate-700',
+                                            expanded
+                                                ? 'block'
+                                                : 'hidden md:hidden',
+                                        )}
+                                    >
+                                        {children.map((child) => (
+                                            <li key={child.text}>
+                                                <Link
+                                                    href={child.href}
+                                                    aria-current={
+                                                        isCurrent(child.href)
+                                                            ? 'page'
+                                                            : undefined
+                                                    }
+                                                    className={cn(
+                                                        'flex items-center py-2 pr-4 pl-8 whitespace-nowrap hover:text-aw-primary md:px-4 dark:hover:text-white',
+                                                        isCurrent(child.href) &&
+                                                            'text-aw-primary dark:text-white',
+                                                    )}
+                                                >
+                                                    {child.text}
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </nav>
 

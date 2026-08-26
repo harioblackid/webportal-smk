@@ -20,7 +20,26 @@ export type Route = {
 /** Public pages — the SEO-critical set, and the reason SSR exists. */
 export const publicRoutes: Route[] = [
     { path: '/', name: 'beranda', expect: 'SMK PGRI Telagasari' },
-    { path: '/profil', name: 'profil', expect: 'Profil' },
+    { path: '/profil', name: 'visi misi', expect: 'Profil' },
+    // The four toggled pages are on by default, so they belong in the walk.
+    // A run against a site with one switched off will see 404 here, which is
+    // the correct signal rather than a false pass.
+    {
+        path: '/profil/identitas',
+        name: 'identitas sekolah',
+        expect: 'Identitas',
+    },
+    {
+        path: '/profil/spektrum-kurikulum',
+        name: 'spektrum kurikulum',
+        expect: 'Spektrum',
+    },
+    { path: '/galeri', name: 'galeri index', expect: 'Galeri' },
+    {
+        path: '/ekstrakurikuler',
+        name: 'ekstrakurikuler',
+        expect: 'Ekstrakurikuler',
+    },
     { path: '/kontak', name: 'kontak', expect: 'Kontak' },
     { path: '/berita', name: 'berita index', expect: 'Berita' },
     { path: '/berita?page=2', name: 'berita halaman 2', expect: 'Berita' },
@@ -57,6 +76,13 @@ export const adminRoutes: Route[] = [
     { path: '/admin/heroes', name: 'daftar hero' },
     { path: '/admin/heroes/create', name: 'buat hero' },
     { path: '/admin/media', name: 'media' },
+    { path: '/admin/profile-sections', name: 'halaman visi misi' },
+    { path: '/admin/curriculum-spectra', name: 'daftar spektrum' },
+    { path: '/admin/curriculum-spectra/create', name: 'buat spektrum' },
+    { path: '/admin/gallery-albums', name: 'daftar album galeri' },
+    { path: '/admin/gallery-albums/create', name: 'buat album galeri' },
+    { path: '/admin/extracurriculars', name: 'daftar ekstrakurikuler' },
+    { path: '/admin/extracurriculars/create', name: 'buat ekstrakurikuler' },
 ];
 
 /**
@@ -66,6 +92,7 @@ export const adminRoutes: Route[] = [
 export const superadminRoutes: Route[] = [
     { path: '/admin/majors', name: 'daftar jurusan' },
     { path: '/admin/majors/create', name: 'buat jurusan' },
+    { path: '/admin/school-identity', name: 'identitas sekolah' },
     { path: '/admin/settings', name: 'pengaturan' },
     { path: '/admin/users', name: 'daftar pengguna' },
     { path: '/admin/users/create', name: 'buat pengguna' },

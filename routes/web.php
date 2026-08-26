@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\Public\CurriculumController;
+use App\Http\Controllers\Public\ExtracurricularController;
+use App\Http\Controllers\Public\GalleryController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MajorController;
 use App\Http\Controllers\Public\PageController;
 use App\Http\Controllers\Public\PostController;
+use App\Http\Controllers\Public\SchoolIdentityController;
 use App\Http\Controllers\Public\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +19,17 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('profil', [PageController::class, 'profil'])->name('profil');
+
+// Profil sub-pages the CMS can switch off. The middleware answers 404 when a
+// page is off, so an unlinked URL is not merely hidden — it is gone.
+Route::get('profil/identitas', SchoolIdentityController::class)
+    ->middleware('page:identitas')
+    ->name('identitas');
+
+Route::get('profil/spektrum-kurikulum', CurriculumController::class)
+    ->middleware('page:spektrum')
+    ->name('spektrum');
+
 Route::get('kontak', [PageController::class, 'kontak'])->name('kontak');
 
 Route::get('berita', [PostController::class, 'index'])->name('posts.index');
@@ -22,6 +37,15 @@ Route::get('berita', [PostController::class, 'index'])->name('posts.index');
 Route::get('berita/kategori/{category:slug}', [PostController::class, 'category'])
     ->name('posts.category');
 Route::get('berita/{slug}', [PostController::class, 'show'])->name('posts.show');
+
+Route::middleware('page:gallery')->group(function (): void {
+    Route::get('galeri', [GalleryController::class, 'index'])->name('gallery.index');
+    Route::get('galeri/{slug}', [GalleryController::class, 'show'])->name('gallery.show');
+});
+
+Route::get('ekstrakurikuler', ExtracurricularController::class)
+    ->middleware('page:ekskul')
+    ->name('ekskul');
 
 Route::get('jurusan', [MajorController::class, 'index'])->name('majors.index');
 Route::get('jurusan/{slug}', [MajorController::class, 'show'])->name('majors.show');

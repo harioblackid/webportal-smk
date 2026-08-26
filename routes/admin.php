@@ -1,11 +1,16 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CurriculumSpectrumController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExtracurricularController;
+use App\Http\Controllers\Admin\GalleryAlbumController;
 use App\Http\Controllers\Admin\HeroController;
 use App\Http\Controllers\Admin\MajorController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\ProfileSectionController;
+use App\Http\Controllers\Admin\SchoolIdentityController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Middleware\EnsureUserIsSuperadmin;
@@ -32,6 +37,33 @@ Route::resource('categories', CategoryController::class)
 
 Route::resource('heroes', HeroController::class)->except('show');
 
+// Halaman Visi Misi — editorial copy, so both roles. No toggle: Profil always
+// has this page, the only question is what it says.
+Route::get('profile-sections', [ProfileSectionController::class, 'edit'])
+    ->name('profile-sections.edit');
+Route::put('profile-sections', [ProfileSectionController::class, 'update'])
+    ->name('profile-sections.update');
+
+// Declared before the resource, which would otherwise read "visibility" as a
+// {curriculum_spectrum} and hand the toggle to route model binding.
+Route::put('curriculum-spectra/visibility', [CurriculumSpectrumController::class, 'visibility'])
+    ->name('curriculum-spectra.visibility');
+// Without this the parameter is {curriculum_spectra} — Laravel's singular of
+// an already-plural Latin word.
+Route::resource('curriculum-spectra', CurriculumSpectrumController::class)
+    ->parameters(['curriculum-spectra' => 'spectrum'])
+    ->except('show');
+
+Route::put('gallery-albums/visibility', [GalleryAlbumController::class, 'visibility'])
+    ->name('gallery-albums.visibility');
+Route::resource('gallery-albums', GalleryAlbumController::class)
+    ->parameters(['gallery-albums' => 'album'])
+    ->except('show');
+
+Route::put('extracurriculars/visibility', [ExtracurricularController::class, 'visibility'])
+    ->name('extracurriculars.visibility');
+Route::resource('extracurriculars', ExtracurricularController::class)->except('show');
+
 // Without this, Laravel singularises the parameter to {medium}.
 Route::resource('media', MediaController::class)
     ->parameters(['media' => 'media'])
@@ -45,6 +77,14 @@ Route::resource('media', MediaController::class)
 
 Route::middleware(EnsureUserIsSuperadmin::class)->group(function () {
     Route::resource('majors', MajorController::class)->except('show');
+
+    // Identitas resmi sekolah. Superadmin only alongside settings: these
+    // values are what the header, the footer, and the JSON-LD claim the school
+    // is, so they are not editorial content.
+    Route::get('school-identity', [SchoolIdentityController::class, 'edit'])
+        ->name('school-identity.edit');
+    Route::put('school-identity', [SchoolIdentityController::class, 'update'])
+        ->name('school-identity.update');
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');

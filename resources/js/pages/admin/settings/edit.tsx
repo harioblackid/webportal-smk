@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
 import MediaPicker from '@/components/admin/media-picker';
@@ -7,19 +7,25 @@ import { Checkbox } from '@/components/ui/checkbox';
 import Field from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
+import { edit as schoolIdentityEdit } from '@/routes/admin/school-identity';
 import { update as updateSettings } from '@/routes/admin/settings';
 import type { MediaItem } from '@/types';
 
 type SettingValues = {
-    school_name: string;
     tagline: string;
     logo_media_id: number | null;
-    contact_address: string;
-    contact_phone: string;
     contact_whatsapp: string;
-    contact_email: string;
+    /** Which source the Kontak map is built from. */
+    maps_mode: 'coordinates' | 'link';
     maps_embed: string;
     ppdb_enabled: boolean;
     ppdb_url: string;
@@ -61,21 +67,16 @@ export default function SettingsEdit({
                         Identitas
                     </legend>
 
-                    <Field
-                        id="school_name"
-                        label="Nama sekolah"
-                        error={form.errors.school_name}
-                    >
-                        <Input
-                            id="school_name"
-                            required
-                            aria-invalid={Boolean(form.errors.school_name)}
-                            value={form.data.school_name}
-                            onChange={(event) =>
-                                form.setData('school_name', event.target.value)
-                            }
-                        />
-                    </Field>
+                    <p className="text-sm text-muted-foreground">
+                        Nama sekolah, alamat, telepon, dan email kini diatur di{' '}
+                        <Link
+                            href={schoolIdentityEdit()}
+                            className="font-medium text-foreground underline underline-offset-4"
+                        >
+                            Identitas Sekolah
+                        </Link>
+                        , agar situs publik hanya punya satu sumber data.
+                    </p>
 
                     <Field
                         id="tagline"
@@ -113,107 +114,98 @@ export default function SettingsEdit({
                     </legend>
 
                     <Field
-                        id="contact_address"
-                        label="Alamat"
-                        error={form.errors.contact_address}
-                    >
-                        <Textarea
-                            id="contact_address"
-                            rows={2}
-                            aria-invalid={Boolean(form.errors.contact_address)}
-                            value={form.data.contact_address}
-                            onChange={(event) =>
-                                form.setData(
-                                    'contact_address',
-                                    event.target.value,
-                                )
-                            }
-                        />
-                    </Field>
-
-                    <div className="grid gap-5 sm:grid-cols-2">
-                        <Field
-                            id="contact_phone"
-                            label="Telepon"
-                            error={form.errors.contact_phone}
-                        >
-                            <Input
-                                id="contact_phone"
-                                type="tel"
-                                aria-invalid={Boolean(
-                                    form.errors.contact_phone,
-                                )}
-                                value={form.data.contact_phone}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'contact_phone',
-                                        event.target.value,
-                                    )
-                                }
-                            />
-                        </Field>
-
-                        <Field
-                            id="contact_whatsapp"
-                            label="WhatsApp"
-                            error={form.errors.contact_whatsapp}
-                        >
-                            <Input
-                                id="contact_whatsapp"
-                                type="tel"
-                                placeholder="08xxxxxxxxxx"
-                                aria-invalid={Boolean(
-                                    form.errors.contact_whatsapp,
-                                )}
-                                value={form.data.contact_whatsapp}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'contact_whatsapp',
-                                        event.target.value,
-                                    )
-                                }
-                            />
-                        </Field>
-                    </div>
-
-                    <Field
-                        id="contact_email"
-                        label="Email"
-                        error={form.errors.contact_email}
+                        id="contact_whatsapp"
+                        label="WhatsApp"
+                        error={form.errors.contact_whatsapp}
                     >
                         <Input
-                            id="contact_email"
-                            type="email"
-                            aria-invalid={Boolean(form.errors.contact_email)}
-                            value={form.data.contact_email}
+                            id="contact_whatsapp"
+                            type="tel"
+                            placeholder="08xxxxxxxxxx"
+                            aria-invalid={Boolean(form.errors.contact_whatsapp)}
+                            value={form.data.contact_whatsapp}
                             onChange={(event) =>
                                 form.setData(
-                                    'contact_email',
+                                    'contact_whatsapp',
                                     event.target.value,
                                 )
-                            }
-                        />
-                    </Field>
-
-                    <Field
-                        id="maps_embed"
-                        label="Google Maps"
-                        error={form.errors.maps_embed}
-                    >
-                        <Textarea
-                            id="maps_embed"
-                            rows={2}
-                            aria-invalid={Boolean(form.errors.maps_embed)}
-                            value={form.data.maps_embed}
-                            onChange={(event) =>
-                                form.setData('maps_embed', event.target.value)
                             }
                         />
                         <p className="text-sm text-muted-foreground">
-                            Tempel URL embed atau seluruh kode iframe dari
-                            Google Maps — hanya alamat petanya yang dipakai.
+                            Nomor telepon dan email sekolah diambil dari
+                            Identitas Sekolah; yang ini khusus kanal WhatsApp.
                         </p>
                     </Field>
+
+                    <Field
+                        id="maps_mode"
+                        label="Sumber lokasi peta"
+                        error={form.errors.maps_mode}
+                    >
+                        <Select
+                            value={form.data.maps_mode}
+                            onValueChange={(value) =>
+                                form.setData(
+                                    'maps_mode',
+                                    value as SettingValues['maps_mode'],
+                                )
+                            }
+                        >
+                            <SelectTrigger
+                                id="maps_mode"
+                                className="w-full"
+                                aria-invalid={Boolean(form.errors.maps_mode)}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value="link">
+                                    Link Google Maps
+                                </SelectItem>
+                                <SelectItem value="coordinates">
+                                    Titik koordinat
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    {form.data.maps_mode === 'coordinates' ? (
+                        <p className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                            Peta dibangun dari <strong>Lintang</strong> dan{' '}
+                            <strong>Bujur</strong> pada{' '}
+                            <Link
+                                href={schoolIdentityEdit()}
+                                className="font-medium text-foreground underline underline-offset-4"
+                            >
+                                Identitas Sekolah
+                            </Link>
+                            . Bila salah satunya kosong, peta tidak ditampilkan.
+                        </p>
+                    ) : (
+                        <Field
+                            id="maps_embed"
+                            label="Link Google Maps"
+                            error={form.errors.maps_embed}
+                        >
+                            <Textarea
+                                id="maps_embed"
+                                rows={2}
+                                aria-invalid={Boolean(form.errors.maps_embed)}
+                                value={form.data.maps_embed}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'maps_embed',
+                                        event.target.value,
+                                    )
+                                }
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Tempel URL embed atau seluruh kode iframe dari
+                                Google Maps — hanya alamat petanya yang dipakai.
+                            </p>
+                        </Field>
+                    )}
                 </fieldset>
 
                 <fieldset className="space-y-5 rounded-xl border border-border p-5">

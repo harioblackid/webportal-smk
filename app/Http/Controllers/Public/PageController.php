@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ImageResource;
+use App\Models\ProfileMission;
+use App\Models\ProfileSection;
 use App\Support\Seo;
 use App\Support\SiteSettings;
 use Illuminate\Http\Request;
@@ -17,7 +20,34 @@ class PageController extends Controller
 {
     public function profil(): InertiaResponse
     {
+        $sections = ProfileSection::query()->with('media')->get()->keyBy('key');
+
         return Inertia::render('public/profil', [
+            // Keyed by section rather than sent as a list: the page gives each
+            // one its own widget and layout, so it asks for them by name.
+            'sections' => array_map(function (string $key) use ($sections): array {
+                $body = $sections->get($key)?->body;
+
+                return [
+                    'key' => $key,
+                    'title' => $sections->get($key)?->title,
+                    // Stripped on the way out too, not only on the way in: a
+                    // row written before this section became plain text would
+                    // otherwise still break hydration on the live page.
+                    'body' => $body !== null && ProfileSection::isPlainText($key)
+                        ? trim(strip_tags($body))
+                        : $body,
+                    'image' => ImageResource::optional($sections->get($key)?->media),
+                ];
+            }, ProfileSection::KEYS),
+            'missions' => ProfileMission::query()
+                ->ordered()
+                ->get()
+                ->map(fn (ProfileMission $mission) => [
+                    'title' => $mission->title,
+                    'description' => $mission->description,
+                ])
+                ->all(),
             'seo' => Seo::page(
                 'Profil Sekolah',
                 'Sambutan kepala sekolah, sejarah singkat, visi & misi, serta identitas yayasan SMK PGRI Telagasari.',

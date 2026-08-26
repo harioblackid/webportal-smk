@@ -1,27 +1,69 @@
+import type { InertiaLinkProps } from '@inertiajs/react';
 import { Link, usePage } from '@inertiajs/react';
 import { Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 
-import { home, kontak, profil } from '@/routes';
+import { ekskul, home, identitas, kontak, profil, spektrum } from '@/routes';
+import { index as galleryIndex } from '@/routes/gallery';
 import { index as majorsIndex } from '@/routes/majors';
 import { index as postsIndex } from '@/routes/posts';
+import type { Site } from '@/types';
 
-const columns = [
-    {
-        title: 'Sekolah',
-        links: [
-            { text: 'Beranda', href: home() },
-            { text: 'Profil', href: profil() },
-            { text: 'Kontak', href: kontak() },
-        ],
-    },
-    {
-        title: 'Informasi',
-        links: [
-            { text: 'Jurusan', href: majorsIndex() },
-            { text: 'Berita & Pengumuman', href: postsIndex() },
-        ],
-    },
-];
+type FooterLink = {
+    text: string;
+    href: NonNullable<InertiaLinkProps['href']>;
+    /** Which site.pages flag decides whether this link renders at all. */
+    page?: keyof Site['pages'];
+};
+
+/**
+ * Mirrors the navbar's structure. Built as a function rather than a constant
+ * because half of it depends on which pages the CMS has switched on.
+ *
+ * @return {{ title: string, links: FooterLink[] }[]}
+ */
+const columns = (pages: Site['pages']) =>
+    [
+        {
+            title: 'Sekolah',
+            links: [
+                { text: 'Beranda', href: home() },
+                { text: 'Visi Misi', href: profil() },
+                {
+                    text: 'Identitas Sekolah',
+                    href: identitas(),
+                    page: 'identitas' as const,
+                },
+                {
+                    text: 'Spektrum Kurikulum',
+                    href: spektrum(),
+                    page: 'spektrum' as const,
+                },
+                { text: 'Kontak', href: kontak() },
+            ],
+        },
+        {
+            title: 'Informasi',
+            links: [
+                { text: 'Jurusan', href: majorsIndex() },
+                {
+                    text: 'Gallery',
+                    href: galleryIndex(),
+                    page: 'gallery' as const,
+                },
+                {
+                    text: 'Ekstrakurikuler',
+                    href: ekskul(),
+                    page: 'ekskul' as const,
+                },
+                { text: 'Berita & Pengumuman', href: postsIndex() },
+            ],
+        },
+    ].map((column) => ({
+        ...column,
+        links: (column.links as FooterLink[]).filter(
+            (link) => link.page === undefined || pages[link.page],
+        ),
+    }));
 
 /** AstroWind's widgets/Footer — brand column, link columns, contact row. */
 export default function Footer() {
@@ -84,7 +126,7 @@ export default function Footer() {
                         )}
                     </div>
 
-                    {columns.map((column) => (
+                    {columns(site.pages).map((column) => (
                         <div
                             key={column.title}
                             className="col-span-6 md:col-span-3 lg:col-span-2"

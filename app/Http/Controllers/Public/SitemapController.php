@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Models\GalleryAlbum;
 use App\Models\Major;
 use App\Models\Post;
+use App\Support\PageVisibility;
 use App\Support\SiteSettings;
 use Illuminate\Http\Response;
 
@@ -18,6 +20,18 @@ use Illuminate\Http\Response;
  */
 class SitemapController extends Controller
 {
+    /**
+     * Toggle key => route name, for the pages the CMS can switch off.
+     *
+     * @var array<string, string>
+     */
+    private const TOGGLED = [
+        'identitas' => 'identitas',
+        'spektrum' => 'spektrum',
+        'gallery' => 'gallery.index',
+        'ekskul' => 'ekskul',
+    ];
+
     public function sitemap(): Response
     {
         $base = self::base();
@@ -29,6 +43,14 @@ class SitemapController extends Controller
             self::url($base.route('posts.index', absolute: false), 'daily', '0.8'),
             self::url($base.route('majors.index', absolute: false), 'weekly', '0.8'),
         ];
+
+        // A page the school switched off answers 404, so advertising it here
+        // would hand crawlers a broken URL and invite it to be indexed as one.
+        foreach (self::TOGGLED as $page => $routeName) {
+            if (PageVisibility::enabled($page)) {
+                $urls[] = self::url($base.route($routeName, absolute: false), 'monthly', '0.6');
+            }
+        }
 
         foreach (Post::query()->published()->latest('published_at')->get() as $post) {
             $urls[] = self::url(
@@ -46,6 +68,17 @@ class SitemapController extends Controller
                 '0.7',
                 $major->updated_at?->toAtomString(),
             );
+        }
+
+        if (PageVisibility::enabled('gallery')) {
+            foreach (GalleryAlbum::query()->publicList()->get() as $album) {
+                $urls[] = self::url(
+                    $base.route('gallery.show', $album->slug, absolute: false),
+                    'monthly',
+                    '0.5',
+                    $album->updated_at?->toAtomString(),
+                );
+            }
         }
 
         return response()

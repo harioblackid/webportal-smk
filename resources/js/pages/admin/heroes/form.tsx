@@ -4,11 +4,20 @@ import type { FormEvent } from 'react';
 
 import ConfirmDelete from '@/components/admin/confirm-delete';
 import MediaPicker from '@/components/admin/media-picker';
+import UnsavedGuard from '@/components/admin/unsaved-guard';
+import InputError from '@/components/input-error';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import Field from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import {
@@ -17,35 +26,52 @@ import {
     store as storeHero,
     update as updateHero,
 } from '@/routes/admin/heroes';
-import type { MediaItem } from '@/types';
+import type { HeroPostOption, MediaItem } from '@/types';
+
+/** Radix Select forbids an empty item value, so "none" needs a real one. */
+const NO_POST = 'none';
 
 type HeroFormValues = {
     title: string;
     subtitle: string;
     media_id: number | null;
+    post_id: number | null;
+    post_link_text: string;
     cta1_text: string;
     cta1_url: string;
     cta2_text: string;
     cta2_url: string;
     is_active: boolean;
+    sort_order: number;
 };
 
 type HeroFormProps = {
     hero: (HeroFormValues & { id: number }) | null;
     mediaLibrary: MediaItem[];
+    /** Published berita a slide may link to. */
+    posts: HeroPostOption[];
+    defaultPostLinkText: string;
 };
 
-/** FR5-13 — judul, subjudul, gambar, hingga 2 CTA, dan status aktif. */
-export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
+/** Satu slide carousel: judul, subjudul, gambar latar, tautan berita, 2 CTA. */
+export default function HeroForm({
+    hero,
+    mediaLibrary,
+    posts,
+    defaultPostLinkText,
+}: HeroFormProps) {
     const form = useForm<HeroFormValues>({
         title: hero?.title ?? '',
         subtitle: hero?.subtitle ?? '',
         media_id: hero?.media_id ?? null,
+        post_id: hero?.post_id ?? null,
+        post_link_text: hero?.post_link_text ?? '',
         cta1_text: hero?.cta1_text ?? '',
         cta1_url: hero?.cta1_url ?? '',
         cta2_text: hero?.cta2_text ?? '',
         cta2_url: hero?.cta2_url ?? '',
         is_active: hero?.is_active ?? false,
+        sort_order: hero?.sort_order ?? 0,
     });
 
     function submit(event: FormEvent) {
@@ -73,6 +99,8 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                 </Link>
             }
         >
+            <UnsavedGuard dirty={form.isDirty} />
+
             <form onSubmit={submit} className="max-w-3xl space-y-6">
                 <Field id="title" label="Judul" error={form.errors.title}>
                     <Input
@@ -112,6 +140,84 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                     hint="Gambar lanskap beresolusi tinggi bekerja paling baik di layar lebar."
                     onChange={(id) => form.setData('media_id', id)}
                 />
+
+                <fieldset className="space-y-4 rounded-xl border border-border p-5">
+                    <legend className="px-1 text-sm font-semibold text-foreground">
+                        Tautan berita
+                    </legend>
+
+                    <Field
+                        id="post_id"
+                        label="Berita yang ditautkan"
+                        hint="Hanya berita yang sudah terbit. Kosongkan bila slide ini tidak menuju berita."
+                        error={form.errors.post_id}
+                    >
+                        <Select
+                            value={
+                                form.data.post_id === null
+                                    ? NO_POST
+                                    : String(form.data.post_id)
+                            }
+                            onValueChange={(value) =>
+                                form.setData(
+                                    'post_id',
+                                    value === NO_POST ? null : Number(value),
+                                )
+                            }
+                        >
+                            <SelectTrigger
+                                id="post_id"
+                                className="w-full"
+                                aria-invalid={Boolean(form.errors.post_id)}
+                            >
+                                <SelectValue placeholder="Tidak ditautkan" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value={NO_POST}>
+                                    Tidak ditautkan
+                                </SelectItem>
+
+                                {posts.map((post) => (
+                                    <SelectItem
+                                        key={post.id}
+                                        value={String(post.id)}
+                                    >
+                                        {post.title}
+                                        {post.publishedAtLabel === null
+                                            ? ''
+                                            : ` — ${post.publishedAtLabel}`}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field
+                        id="post_link_text"
+                        label="Teks tombol"
+                        error={form.errors.post_link_text}
+                    >
+                        <Input
+                            id="post_link_text"
+                            maxLength={60}
+                            disabled={form.data.post_id === null}
+                            placeholder={defaultPostLinkText}
+                            aria-invalid={Boolean(form.errors.post_link_text)}
+                            value={form.data.post_link_text}
+                            onChange={(event) =>
+                                form.setData(
+                                    'post_link_text',
+                                    event.target.value,
+                                )
+                            }
+                        />
+                        <p className="text-sm text-muted-foreground">
+                            Kosongkan untuk memakai &ldquo;
+                            {defaultPostLinkText}&rdquo;.
+                        </p>
+                    </Field>
+                </fieldset>
 
                 <fieldset className="space-y-4 rounded-xl border border-border p-5">
                     <legend className="px-1 text-sm font-semibold text-foreground">
@@ -197,17 +303,44 @@ export default function HeroForm({ hero, mediaLibrary }: HeroFormProps) {
                     </div>
                 </fieldset>
 
-                <div className="flex items-center space-x-3">
-                    <Checkbox
-                        id="is_active"
-                        checked={form.data.is_active}
-                        onCheckedChange={(checked) =>
-                            form.setData('is_active', checked === true)
+                <Field
+                    id="sort_order"
+                    label="Urutan slide"
+                    hint="Angka kecil tampil lebih dulu di carousel."
+                    error={form.errors.sort_order}
+                >
+                    <Input
+                        id="sort_order"
+                        type="number"
+                        min={0}
+                        max={9999}
+                        className="max-w-32"
+                        aria-invalid={Boolean(form.errors.sort_order)}
+                        value={form.data.sort_order}
+                        onChange={(event) =>
+                            form.setData(
+                                'sort_order',
+                                Number(event.target.value),
+                            )
                         }
                     />
-                    <Label htmlFor="is_active">
-                        Jadikan hero aktif — hero lain otomatis dinonaktifkan
-                    </Label>
+                </Field>
+
+                <div className="grid gap-2">
+                    <div className="flex items-center space-x-3">
+                        <Checkbox
+                            id="is_active"
+                            checked={form.data.is_active}
+                            onCheckedChange={(checked) =>
+                                form.setData('is_active', checked === true)
+                            }
+                        />
+                        <Label htmlFor="is_active">
+                            Tampilkan slide ini di halaman depan
+                        </Label>
+                    </div>
+
+                    <InputError message={form.errors.is_active} />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 border-t border-border pt-6">

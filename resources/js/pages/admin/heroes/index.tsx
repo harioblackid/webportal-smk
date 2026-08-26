@@ -14,10 +14,20 @@ import type { HeroRow } from '@/types';
 
 type HeroesIndexProps = {
     heroes: HeroRow[];
+    /** Hero::MAX_ACTIVE — the carousel's slide budget. */
+    maxActive: number;
+    activeCount: number;
 };
 
-/** US-013 — daftar hero; yang aktif adalah yang tampil di halaman depan. */
-export default function HeroesIndex({ heroes }: HeroesIndexProps) {
+/**
+ * Daftar hero. Yang aktif menjadi slide carousel di halaman depan, diurutkan
+ * menurut kolom urutan.
+ */
+export default function HeroesIndex({
+    heroes,
+    maxActive,
+    activeCount,
+}: HeroesIndexProps) {
     return (
         <AdminLayout
             title="Hero halaman depan"
@@ -29,9 +39,10 @@ export default function HeroesIndex({ heroes }: HeroesIndexProps) {
             }
         >
             <p className="text-sm text-muted-foreground">
-                Hanya satu hero yang aktif. Mengaktifkan satu hero otomatis
-                menonaktifkan yang lain, dan perubahannya langsung tampil di
-                halaman depan.
+                Hero yang aktif tampil sebagai slide carousel di halaman depan,
+                diurutkan menurut kolom urutan. Maksimal {maxActive} hero boleh
+                aktif bersamaan — saat ini {activeCount} aktif. Perubahan
+                langsung tampil, tanpa deploy ulang.
             </p>
 
             {heroes.length === 0 ? (
@@ -57,11 +68,19 @@ export default function HeroesIndex({ heroes }: HeroesIndexProps) {
 
                             <div className="min-w-40 flex-1">
                                 <p className="font-medium text-foreground">
+                                    <span className="mr-2 text-muted-foreground">
+                                        #{hero.sortOrder}
+                                    </span>
                                     {hero.title}
                                 </p>
                                 {hero.subtitle === null ? null : (
                                     <p className="text-sm text-muted-foreground">
                                         {hero.subtitle}
+                                    </p>
+                                )}
+                                {hero.postTitle === null ? null : (
+                                    <p className="text-xs text-muted-foreground">
+                                        Tertaut ke berita: {hero.postTitle}
                                     </p>
                                 )}
                             </div>

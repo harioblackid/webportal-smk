@@ -24,12 +24,26 @@ test('the hero comes from the CMS when one is active', function () {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('public/home')
-            ->where('hero.title', 'Selamat datang di SMK PGRI Telagasari')
-            ->where('hero.subtitle', 'Kejuruan yang siap kerja')
-            ->where('hero.image.alt', 'Gerbang sekolah')
+            ->has('heroes', 1)
+            ->where('heroes.0.title', 'Selamat datang di SMK PGRI Telagasari')
+            ->where('heroes.0.subtitle', 'Kejuruan yang siap kerja')
+            ->where('heroes.0.image.alt', 'Gerbang sekolah')
             // The half-filled second CTA is dropped rather than rendered blank.
-            ->count('hero.ctas', 1)
-            ->where('hero.ctas.0.text', 'Daftar PPDB')
+            ->count('heroes.0.ctas', 1)
+            ->where('heroes.0.ctas.0.text', 'Daftar PPDB')
+        );
+});
+
+test('every active hero becomes a slide, in sort order', function () {
+    Hero::factory()->active()->create(['title' => 'Kedua', 'sort_order' => 2]);
+    Hero::factory()->active()->create(['title' => 'Pertama', 'sort_order' => 1]);
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('heroes', 2)
+            ->where('heroes.0.title', 'Pertama')
+            ->where('heroes.1.title', 'Kedua')
         );
 });
 
@@ -38,16 +52,16 @@ test('an inactive hero is not shown', function () {
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('hero', null));
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('heroes', 0));
 });
 
 test('home renders without error when no hero is active', function () {
-    // FR4-2: the fallback is the page's job, so the prop is simply null.
+    // FR4-2: the fallback is the page's job, so the prop is simply empty.
     $this->get(route('home'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('public/home')
-            ->where('hero', null)
+            ->has('heroes', 0)
         );
 });
 

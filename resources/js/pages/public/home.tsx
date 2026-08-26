@@ -6,18 +6,19 @@ import type { FeatureItem } from '@/components/public/features';
 import Features from '@/components/public/features';
 import Headline from '@/components/public/headline';
 import Hero from '@/components/public/hero';
+import HeroCarousel from '@/components/public/hero-carousel';
 import NewsCard from '@/components/public/news-card';
 import PpdbBanner from '@/components/public/ppdb-banner';
-import SiteImage from '@/components/public/site-image';
 import WidgetWrapper from '@/components/public/widget-wrapper';
 import PublicLayout from '@/layouts/public-layout';
 import { profil } from '@/routes';
 import { index as majorsIndex } from '@/routes/majors';
 import { index as postsIndex } from '@/routes/posts';
-import type { Hero as HeroData, NewsCard as NewsCardData, Seo } from '@/types';
+import type { HeroSlide, NewsCard as NewsCardData, Seo } from '@/types';
 
 type HomeProps = {
-    hero: HeroData | null;
+    /** Active heroes in sort order; empty means the fallback opener. */
+    heroes: HeroSlide[];
     posts: NewsCardData[];
     seo: Seo;
 };
@@ -38,39 +39,23 @@ const highlights: FeatureItem[] = [
     },
 ];
 
-export default function Home({ hero, posts, seo }: HomeProps) {
+export default function Home({ heroes, posts, seo }: HomeProps) {
     const site = usePage().props.site;
-    const heading = hero?.title ?? site.name;
-    const subheading =
-        hero?.subtitle ??
-        site.tagline ??
-        'Sekolah menengah kejuruan di bawah naungan YPLP Dasar Menengah PGRI.';
 
     return (
         <PublicLayout seo={seo}>
-            <Hero
-                tagline="Portal Resmi Sekolah"
-                title={heading}
-                subtitle={subheading}
-                actions={
-                    hero !== null && hero.ctas.length > 0 ? (
-                        hero.ctas.map((cta, index) => (
-                            <div
-                                key={cta.url}
-                                className="flex w-full sm:w-auto"
-                            >
-                                <a
-                                    href={cta.url}
-                                    className={buttonClasses(
-                                        index === 0 ? 'primary' : 'secondary',
-                                        'w-full sm:mb-0',
-                                    )}
-                                >
-                                    {cta.text}
-                                </a>
-                            </div>
-                        ))
-                    ) : (
+            {heroes.length === 0 ? (
+                // FR4-2: no active hero is a normal state, not a broken page.
+                <Hero
+                    tagline="Portal Resmi Sekolah"
+                    title={site.name}
+                    subtitle={
+                        site.tagline ??
+                        'Sekolah menengah kejuruan di bawah naungan YPLP Dasar Menengah PGRI.'
+                    }
+                    image={null}
+                    eager
+                    actions={
                         <>
                             <div className="flex w-full sm:w-auto">
                                 <Link
@@ -95,17 +80,11 @@ export default function Home({ hero, posts, seo }: HomeProps) {
                                 </Link>
                             </div>
                         </>
-                    )
-                }
-                image={
-                    <SiteImage
-                        image={hero?.image ?? null}
-                        ratio="aspect-[16/9]"
-                        className="mx-auto w-full rounded-md"
-                        eager
-                    />
-                }
-            />
+                    }
+                />
+            ) : (
+                <HeroCarousel slides={heroes} tagline="Portal Resmi Sekolah" />
+            )}
 
             <Features
                 id="sekilas"

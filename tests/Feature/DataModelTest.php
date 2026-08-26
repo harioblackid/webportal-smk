@@ -76,11 +76,11 @@ test('slugs are unique on posts, categories, and majors', function (string $mode
 ]);
 
 test('settings keys are unique and readable by key', function () {
-    Setting::put('school_name', 'SMK PGRI Telagasari');
-    Setting::put('school_name', 'SMK PGRI Telagasari (revisi)');
+    Setting::put('tagline', 'Terampil');
+    Setting::put('tagline', 'Terampil dan Mandiri');
 
-    expect(Setting::query()->where('key', 'school_name')->count())->toBe(1)
-        ->and(Setting::get('school_name'))->toBe('SMK PGRI Telagasari (revisi)')
+    expect(Setting::query()->where('key', 'tagline')->count())->toBe(1)
+        ->and(Setting::get('tagline'))->toBe('Terampil dan Mandiri')
         ->and(Setting::get('tidak_ada', 'bawaan'))->toBe('bawaan');
 });
 
