@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 
 import MediaPicker from '@/components/admin/media-picker';
@@ -9,17 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
+import { edit as schoolIdentityEdit } from '@/routes/admin/school-identity';
 import { update as updateSettings } from '@/routes/admin/settings';
 import type { MediaItem } from '@/types';
 
 type SettingValues = {
-    school_name: string;
     tagline: string;
     logo_media_id: number | null;
-    contact_address: string;
-    contact_phone: string;
     contact_whatsapp: string;
-    contact_email: string;
     maps_embed: string;
     ppdb_enabled: boolean;
     ppdb_url: string;
@@ -61,21 +58,16 @@ export default function SettingsEdit({
                         Identitas
                     </legend>
 
-                    <Field
-                        id="school_name"
-                        label="Nama sekolah"
-                        error={form.errors.school_name}
-                    >
-                        <Input
-                            id="school_name"
-                            required
-                            aria-invalid={Boolean(form.errors.school_name)}
-                            value={form.data.school_name}
-                            onChange={(event) =>
-                                form.setData('school_name', event.target.value)
-                            }
-                        />
-                    </Field>
+                    <p className="text-sm text-muted-foreground">
+                        Nama sekolah, alamat, telepon, dan email kini diatur di{' '}
+                        <Link
+                            href={schoolIdentityEdit()}
+                            className="font-medium text-foreground underline underline-offset-4"
+                        >
+                            Identitas Sekolah
+                        </Link>
+                        , agar situs publik hanya punya satu sumber data.
+                    </p>
 
                     <Field
                         id="tagline"
@@ -113,86 +105,27 @@ export default function SettingsEdit({
                     </legend>
 
                     <Field
-                        id="contact_address"
-                        label="Alamat"
-                        error={form.errors.contact_address}
-                    >
-                        <Textarea
-                            id="contact_address"
-                            rows={2}
-                            aria-invalid={Boolean(form.errors.contact_address)}
-                            value={form.data.contact_address}
-                            onChange={(event) =>
-                                form.setData(
-                                    'contact_address',
-                                    event.target.value,
-                                )
-                            }
-                        />
-                    </Field>
-
-                    <div className="grid gap-5 sm:grid-cols-2">
-                        <Field
-                            id="contact_phone"
-                            label="Telepon"
-                            error={form.errors.contact_phone}
-                        >
-                            <Input
-                                id="contact_phone"
-                                type="tel"
-                                aria-invalid={Boolean(
-                                    form.errors.contact_phone,
-                                )}
-                                value={form.data.contact_phone}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'contact_phone',
-                                        event.target.value,
-                                    )
-                                }
-                            />
-                        </Field>
-
-                        <Field
-                            id="contact_whatsapp"
-                            label="WhatsApp"
-                            error={form.errors.contact_whatsapp}
-                        >
-                            <Input
-                                id="contact_whatsapp"
-                                type="tel"
-                                placeholder="08xxxxxxxxxx"
-                                aria-invalid={Boolean(
-                                    form.errors.contact_whatsapp,
-                                )}
-                                value={form.data.contact_whatsapp}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'contact_whatsapp',
-                                        event.target.value,
-                                    )
-                                }
-                            />
-                        </Field>
-                    </div>
-
-                    <Field
-                        id="contact_email"
-                        label="Email"
-                        error={form.errors.contact_email}
+                        id="contact_whatsapp"
+                        label="WhatsApp"
+                        error={form.errors.contact_whatsapp}
                     >
                         <Input
-                            id="contact_email"
-                            type="email"
-                            aria-invalid={Boolean(form.errors.contact_email)}
-                            value={form.data.contact_email}
+                            id="contact_whatsapp"
+                            type="tel"
+                            placeholder="08xxxxxxxxxx"
+                            aria-invalid={Boolean(form.errors.contact_whatsapp)}
+                            value={form.data.contact_whatsapp}
                             onChange={(event) =>
                                 form.setData(
-                                    'contact_email',
+                                    'contact_whatsapp',
                                     event.target.value,
                                 )
                             }
                         />
+                        <p className="text-sm text-muted-foreground">
+                            Nomor telepon dan email sekolah diambil dari
+                            Identitas Sekolah; yang ini khusus kanal WhatsApp.
+                        </p>
                     </Field>
 
                     <Field

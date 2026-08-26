@@ -23,14 +23,17 @@ class SiteSettings
     public static function share(): array
     {
         $values = Setting::query()->pluck('value', 'key');
+        // Name, address, phone, and email live in `school_id` — the identity
+        // record — not in site settings, so the two can never disagree.
+        $identity = SchoolIdentityFields::all();
 
-        $phone = self::clean($values->get('contact_phone'));
+        $phone = $identity['nomor_telepon'] ?? null;
         $whatsapp = self::clean($values->get('contact_whatsapp'));
         $ppdbUrl = self::clean($values->get('ppdb_url'));
         $base = self::baseUrl();
 
         $site = [
-            'name' => self::clean($values->get('school_name')) ?? config('app.name'),
+            'name' => $identity['nama_sekolah'] ?? config('app.name'),
             'tagline' => self::clean($values->get('tagline')),
             'url' => $base,
             // D-4: derived from the school crest and served from public/ at a
@@ -40,12 +43,12 @@ class SiteSettings
             // FR6-19: what a share falls back to when a page has no image.
             'ogImage' => $base.'/og-default.png',
             'contact' => [
-                'address' => self::clean($values->get('contact_address')),
+                'address' => $identity['alamat'] ?? null,
                 'phone' => $phone,
                 'phoneHref' => $phone === null ? null : 'tel:'.self::digits($phone),
                 'whatsapp' => $whatsapp,
                 'whatsappHref' => $whatsapp === null ? null : 'https://wa.me/'.self::msisdn($whatsapp),
-                'email' => self::clean($values->get('contact_email')),
+                'email' => $identity['email'] ?? null,
             ],
             'ppdb' => [
                 // FR4-14: the banner is opt-in, and a banner without a target

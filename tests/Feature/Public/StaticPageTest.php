@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\SchoolIdentity;
 use App\Models\Setting;
 use Inertia\Testing\AssertableInertia;
 
@@ -23,10 +24,10 @@ test('profil renders with its own metadata', function () {
 
 test('kontak turns the stored contact details into live links', function () {
     // FR4-18: tel:, wa.me, mailto: — never plain text to copy by hand.
-    Setting::put('contact_phone', '(0267) 123456');
+    SchoolIdentity::put('nomor_telepon', '(0267) 123456');
     Setting::put('contact_whatsapp', '0812-3456-7890');
-    Setting::put('contact_email', 'info@smkpgritelagasari.sch.id');
-    Setting::put('contact_address', 'Jalan Raya Telagasari');
+    SchoolIdentity::put('email', 'info@smkpgritelagasari.sch.id');
+    SchoolIdentity::put('alamat', 'Jalan Raya Telagasari');
 
     $this->get(route('kontak'))
         ->assertOk()
@@ -69,7 +70,7 @@ test('an unknown url returns a real 404 with the custom page', function () {
 });
 
 test('every public page carries a canonical base and school identity', function () {
-    Setting::put('school_name', 'SMK PGRI Telagasari');
+    SchoolIdentity::put('nama_sekolah', 'SMK PGRI Telagasari');
 
     foreach ([route('home'), route('profil'), route('kontak'), route('posts.index'), route('majors.index')] as $url) {
         $this->get($url)->assertInertia(fn (AssertableInertia $page) => $page

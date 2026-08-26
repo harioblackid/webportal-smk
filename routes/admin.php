@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\HeroController;
 use App\Http\Controllers\Admin\MajorController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PostController;
+use App\Http\Controllers\Admin\SchoolIdentityController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Middleware\EnsureUserIsSuperadmin;
@@ -45,6 +46,14 @@ Route::resource('media', MediaController::class)
 
 Route::middleware(EnsureUserIsSuperadmin::class)->group(function () {
     Route::resource('majors', MajorController::class)->except('show');
+
+    // Identitas resmi sekolah. Superadmin only alongside settings: these
+    // values are what the header, the footer, and the JSON-LD claim the school
+    // is, so they are not editorial content.
+    Route::get('school-identity', [SchoolIdentityController::class, 'edit'])
+        ->name('school-identity.edit');
+    Route::put('school-identity', [SchoolIdentityController::class, 'update'])
+        ->name('school-identity.update');
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');

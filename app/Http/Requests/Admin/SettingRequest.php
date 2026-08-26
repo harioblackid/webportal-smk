@@ -36,13 +36,9 @@ class SettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'school_name' => ['required', 'string', 'max:120'],
             'tagline' => ['nullable', 'string', 'max:200'],
             'logo_media_id' => ['nullable', 'integer', Rule::exists('media', 'id')],
-            'contact_address' => ['nullable', 'string', 'max:300'],
-            'contact_phone' => ['nullable', 'string', 'max:40'],
             'contact_whatsapp' => ['nullable', 'string', 'max:40'],
-            'contact_email' => ['nullable', 'email', 'max:120'],
             'maps_embed' => ['nullable', 'string', 'max:2000'],
             'ppdb_enabled' => ['boolean'],
             // FR4-14 only shows the banner when it has somewhere to go, so a
@@ -62,13 +58,9 @@ class SettingRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'school_name' => 'nama sekolah',
             'tagline' => 'tagline',
             'logo_media_id' => 'logo',
-            'contact_address' => 'alamat',
-            'contact_phone' => 'telepon',
             'contact_whatsapp' => 'WhatsApp',
-            'contact_email' => 'email',
             'maps_embed' => 'peta',
             'ppdb_url' => 'URL PPDB',
             'ppdb_banner_media_id' => 'gambar banner PPDB',

@@ -26,13 +26,9 @@ class SettingController extends Controller
      * @var list<string>
      */
     private const KEYS = [
-        'school_name',
         'tagline',
         'logo_media_id',
-        'contact_address',
-        'contact_phone',
         'contact_whatsapp',
-        'contact_email',
         'maps_embed',
         'ppdb_enabled',
         'ppdb_url',
@@ -47,13 +43,9 @@ class SettingController extends Controller
 
         return Inertia::render('admin/settings/edit', [
             'settings' => [
-                'school_name' => $values->get('school_name') ?? config('app.name'),
                 'tagline' => $values->get('tagline') ?? '',
                 'logo_media_id' => self::intOrNull($values->get('logo_media_id')),
-                'contact_address' => $values->get('contact_address') ?? '',
-                'contact_phone' => $values->get('contact_phone') ?? '',
                 'contact_whatsapp' => $values->get('contact_whatsapp') ?? '',
-                'contact_email' => $values->get('contact_email') ?? '',
                 'maps_embed' => $values->get('maps_embed') ?? '',
                 'ppdb_enabled' => filter_var($values->get('ppdb_enabled'), FILTER_VALIDATE_BOOLEAN),
                 'ppdb_url' => $values->get('ppdb_url') ?? '',

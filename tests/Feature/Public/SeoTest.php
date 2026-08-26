@@ -3,6 +3,7 @@
 use App\Models\Major;
 use App\Models\Media;
 use App\Models\Post;
+use App\Models\SchoolIdentity;
 use App\Models\Setting;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
@@ -58,9 +59,9 @@ test('a newly published post appears in the sitemap without any rebuild step', f
 
 test('every public page carries the organisation node', function () {
     // FR6-11 & FR6-13
-    Setting::put('school_name', 'SMK PGRI Telagasari');
-    Setting::put('contact_address', 'Jalan Raya Telagasari');
-    Setting::put('contact_email', 'info@example.test');
+    SchoolIdentity::put('nama_sekolah', 'SMK PGRI Telagasari');
+    SchoolIdentity::put('alamat', 'Jalan Raya Telagasari');
+    SchoolIdentity::put('email', 'info@example.test');
 
     $this->get(route('kontak'))
         ->assertInertia(fn (AssertableInertia $page) => $page

@@ -6,6 +6,7 @@ import {
     Images,
     LayoutDashboard,
     LayoutTemplate,
+    School,
     Settings,
     Tags,
     Users,
@@ -33,6 +34,7 @@ import { index as heroesIndex } from '@/routes/admin/heroes';
 import { index as majorsIndex } from '@/routes/admin/majors';
 import { index as mediaIndex } from '@/routes/admin/media';
 import { index as postsIndex } from '@/routes/admin/posts';
+import { edit as schoolIdentityEdit } from '@/routes/admin/school-identity';
 import { edit as settingsEdit } from '@/routes/admin/settings';
 import { index as usersIndex } from '@/routes/admin/users';
 import type { NavItem } from '@/types';
@@ -55,6 +57,12 @@ const manageNavItems: AdminNavItem[] = [
         title: 'Jurusan',
         href: majorsIndex(),
         icon: GraduationCap,
+        superadmin: true,
+    },
+    {
+        title: 'Identitas Sekolah',
+        href: schoolIdentityEdit(),
+        icon: School,
         superadmin: true,
     },
     {
