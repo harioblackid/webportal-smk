@@ -130,3 +130,13 @@ export type SpectrumRow = {
     isActive: boolean;
     subjectsCount: number;
 };
+
+export type GalleryAlbumRow = {
+    id: number;
+    title: string;
+    slug: string;
+    sortOrder: number;
+    isActive: boolean;
+    itemsCount: number;
+    thumbUrl: string | null;
+};

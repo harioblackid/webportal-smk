@@ -3,6 +3,7 @@ import {
     BookOpen,
     ExternalLink,
     FileText,
+    GalleryHorizontal,
     GraduationCap,
     Images,
     LayoutDashboard,
@@ -33,6 +34,7 @@ import { home } from '@/routes';
 import { dashboard } from '@/routes/admin';
 import { index as categoriesIndex } from '@/routes/admin/categories';
 import { index as spectraIndex } from '@/routes/admin/curriculum-spectra';
+import { index as albumsIndex } from '@/routes/admin/gallery-albums';
 import { index as heroesIndex } from '@/routes/admin/heroes';
 import { index as majorsIndex } from '@/routes/admin/majors';
 import { index as mediaIndex } from '@/routes/admin/media';
@@ -60,6 +62,7 @@ const contentNavItems: AdminNavItem[] = [
 const pageNavItems: AdminNavItem[] = [
     { title: 'Visi Misi', href: profileSectionsEdit(), icon: ScrollText },
     { title: 'Spektrum Kurikulum', href: spectraIndex(), icon: BookOpen },
+    { title: 'Gallery', href: albumsIndex(), icon: GalleryHorizontal },
 ];
 
 const manageNavItems: AdminNavItem[] = [

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CurriculumSpectrumController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\GalleryAlbumController;
 use App\Http\Controllers\Admin\HeroController;
 use App\Http\Controllers\Admin\MajorController;
 use App\Http\Controllers\Admin\MediaController;
@@ -50,6 +51,12 @@ Route::put('curriculum-spectra/visibility', [CurriculumSpectrumController::class
 // an already-plural Latin word.
 Route::resource('curriculum-spectra', CurriculumSpectrumController::class)
     ->parameters(['curriculum-spectra' => 'spectrum'])
+    ->except('show');
+
+Route::put('gallery-albums/visibility', [GalleryAlbumController::class, 'visibility'])
+    ->name('gallery-albums.visibility');
+Route::resource('gallery-albums', GalleryAlbumController::class)
+    ->parameters(['gallery-albums' => 'album'])
     ->except('show');
 
 // Without this, Laravel singularises the parameter to {medium}.

@@ -93,3 +93,20 @@ export type Spectrum = {
     description: string | null;
     groups: SpectrumGroup[];
 };
+
+export type GalleryAlbumCard = {
+    id: number;
+    title: string;
+    slug: string;
+    url: string;
+    description: string | null;
+    photoCount: number;
+    image: Image | null;
+};
+
+/** A photo inside an album; `image` is never null by the time it reaches here. */
+export type GalleryPhoto = {
+    id: number;
+    caption: string | null;
+    image: Image | null;
+};

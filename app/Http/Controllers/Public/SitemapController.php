@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Models\GalleryAlbum;
 use App\Models\Major;
 use App\Models\Post;
 use App\Support\PageVisibility;
@@ -27,6 +28,7 @@ class SitemapController extends Controller
     private const TOGGLED = [
         'identitas' => 'identitas',
         'spektrum' => 'spektrum',
+        'gallery' => 'gallery.index',
     ];
 
     public function sitemap(): Response
@@ -65,6 +67,17 @@ class SitemapController extends Controller
                 '0.7',
                 $major->updated_at?->toAtomString(),
             );
+        }
+
+        if (PageVisibility::enabled('gallery')) {
+            foreach (GalleryAlbum::query()->publicList()->get() as $album) {
+                $urls[] = self::url(
+                    $base.route('gallery.show', $album->slug, absolute: false),
+                    'monthly',
+                    '0.5',
+                    $album->updated_at?->toAtomString(),
+                );
+            }
         }
 
         return response()
