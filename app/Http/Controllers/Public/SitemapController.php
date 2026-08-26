@@ -26,6 +26,7 @@ class SitemapController extends Controller
      */
     private const TOGGLED = [
         'identitas' => 'identitas',
+        'spektrum' => 'spektrum',
     ];
 
     public function sitemap(): Response

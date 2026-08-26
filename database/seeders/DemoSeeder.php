@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Console\Commands\DemoImagesCommand;
 use App\Models\Category;
+use App\Models\CurriculumSpectrum;
 use App\Models\Hero;
 use App\Models\Major;
 use App\Models\Media;
@@ -145,6 +146,64 @@ class DemoSeeder extends Seeder
         $this->fillSettings($media);
         $this->fillExistingPosts($media);
         $this->createPosts($media, $author);
+        $this->createSpectra();
+    }
+
+    /**
+     * A worked example of the spektrum page, using the ordinary Kurikulum
+     * Merdeka SMK structure (kelompok umum + kejuruan).
+     *
+     * TEST MATERIAL, not release content: the real mata pelajaran list belongs
+     * to the school and has to replace this before the site goes live. Marked
+     * with the demo- slug prefix so demo:clear can find it.
+     */
+    private function createSpectra(): void
+    {
+        $umum = [
+            'Pendidikan Agama dan Budi Pekerti',
+            'Pendidikan Pancasila',
+            'Bahasa Indonesia',
+            'Pendidikan Jasmani, Olahraga, dan Kesehatan',
+            'Sejarah',
+            'Seni Budaya',
+        ];
+
+        $kejuruan = [
+            'Matematika',
+            'Bahasa Inggris',
+            'Informatika',
+            'Projek Ilmu Pengetahuan Alam dan Sosial',
+            'Dasar-dasar Program Keahlian',
+            'Konsentrasi Keahlian',
+            'Projek Kreatif dan Kewirausahaan',
+            'Praktik Kerja Lapangan',
+            'Mata Pelajaran Pilihan',
+        ];
+
+        $slug = self::MARKER.'kurikulum-merdeka';
+
+        $spectrum = CurriculumSpectrum::query()->updateOrCreate(
+            ['slug' => $slug],
+            [
+                'name' => 'Kurikulum Merdeka — Fase E dan F',
+                'description' => 'Struktur mata pelajaran yang ditempuh peserta didik kelas X hingga XII.',
+                'sort_order' => 0,
+                'is_active' => true,
+            ],
+        );
+
+        $spectrum->subjects()->delete();
+        $order = 0;
+
+        foreach (['Mata Pelajaran Umum' => $umum, 'Mata Pelajaran Kejuruan' => $kejuruan] as $group => $subjects) {
+            foreach ($subjects as $name) {
+                $spectrum->subjects()->create([
+                    'group' => $group,
+                    'name' => $name,
+                    'sort_order' => $order++,
+                ]);
+            }
+        }
     }
 
     /**

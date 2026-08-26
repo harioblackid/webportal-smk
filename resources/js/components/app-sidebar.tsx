@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BookOpen,
     ExternalLink,
     FileText,
     GraduationCap,
@@ -31,6 +32,7 @@ import { toUrl } from '@/lib/utils';
 import { home } from '@/routes';
 import { dashboard } from '@/routes/admin';
 import { index as categoriesIndex } from '@/routes/admin/categories';
+import { index as spectraIndex } from '@/routes/admin/curriculum-spectra';
 import { index as heroesIndex } from '@/routes/admin/heroes';
 import { index as majorsIndex } from '@/routes/admin/majors';
 import { index as mediaIndex } from '@/routes/admin/media';
@@ -57,6 +59,7 @@ const contentNavItems: AdminNavItem[] = [
 /** The public pages whose content the CMS owns (prd-04 §2, restructured). */
 const pageNavItems: AdminNavItem[] = [
     { title: 'Visi Misi', href: profileSectionsEdit(), icon: ScrollText },
+    { title: 'Spektrum Kurikulum', href: spectraIndex(), icon: BookOpen },
 ];
 
 const manageNavItems: AdminNavItem[] = [

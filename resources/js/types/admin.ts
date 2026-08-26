@@ -121,3 +121,12 @@ export type IdentitySection = {
     label: string;
     rows: IdentityRow[];
 };
+
+export type SpectrumRow = {
+    id: number;
+    name: string;
+    slug: string;
+    sortOrder: number;
+    isActive: boolean;
+    subjectsCount: number;
+};

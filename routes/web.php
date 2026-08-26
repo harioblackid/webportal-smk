@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Public\CurriculumController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MajorController;
 use App\Http\Controllers\Public\PageController;
@@ -22,6 +23,10 @@ Route::get('profil', [PageController::class, 'profil'])->name('profil');
 Route::get('profil/identitas', SchoolIdentityController::class)
     ->middleware('page:identitas')
     ->name('identitas');
+
+Route::get('profil/spektrum-kurikulum', CurriculumController::class)
+    ->middleware('page:spektrum')
+    ->name('spektrum');
 
 Route::get('kontak', [PageController::class, 'kontak'])->name('kontak');
 

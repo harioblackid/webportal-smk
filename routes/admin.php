@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CurriculumSpectrumController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\HeroController;
 use App\Http\Controllers\Admin\MajorController;
@@ -40,6 +41,16 @@ Route::get('profile-sections', [ProfileSectionController::class, 'edit'])
     ->name('profile-sections.edit');
 Route::put('profile-sections', [ProfileSectionController::class, 'update'])
     ->name('profile-sections.update');
+
+// Declared before the resource, which would otherwise read "visibility" as a
+// {curriculum_spectrum} and hand the toggle to route model binding.
+Route::put('curriculum-spectra/visibility', [CurriculumSpectrumController::class, 'visibility'])
+    ->name('curriculum-spectra.visibility');
+// Without this the parameter is {curriculum_spectra} — Laravel's singular of
+// an already-plural Latin word.
+Route::resource('curriculum-spectra', CurriculumSpectrumController::class)
+    ->parameters(['curriculum-spectra' => 'spectrum'])
+    ->except('show');
 
 // Without this, Laravel singularises the parameter to {medium}.
 Route::resource('media', MediaController::class)

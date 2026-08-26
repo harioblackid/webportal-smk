@@ -79,3 +79,17 @@ export type Mission = {
     title: string;
     description: string | null;
 };
+
+/** One kelompok of mata pelajaran; `label` is null when the school lists them flat. */
+export type SpectrumGroup = {
+    label: string | null;
+    subjects: string[];
+};
+
+export type Spectrum = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    groups: SpectrumGroup[];
+};
