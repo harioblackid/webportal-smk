@@ -3,11 +3,12 @@ import { expect, test } from '@playwright/test';
 import { adminRoutes, storageState, superadminRoutes } from '../routes';
 
 /**
- * CMS flows and, more importantly, the FR5-2 role split.
+ * CMS flows, in a real browser.
  *
- * Hiding a button is not authorization. The Editor block below asserts a real
- * 403 status from the server, which is the only thing that actually stops a
- * determined Editor from typing the URL.
+ * What is left here is what only a browser can see: that each admin page renders
+ * without throwing, that the TipTap editor accepts typing at all, and that the
+ * FR5-11 confirm-delete dialog completes. Response statuses and the FR5-2 role
+ * split are asserted in Pest instead — see the note at the foot of this file.
  */
 
 test.describe('superadmin', () => {
@@ -87,9 +88,10 @@ test.describe('superadmin', () => {
 
         await expect(row).toBeVisible();
 
-        // Delete it again. This runs against the developer's real database, so
-        // a test that only creates would silently pile up rows on every run —
-        // and it gets the FR5-11 confirm-dialog flow covered for free.
+        // Delete it again. `laravel_portal_e2e` is scratch, but `Post`
+        // soft-deletes, so a test that only created would still pile up rows
+        // between `npm run test:e2e:db` runs — and deleting gets the FR5-11
+        // confirm-dialog flow covered for free.
         await row.click();
         await page.getByRole('button', { name: 'Ya, hapus' }).click();
 
@@ -125,29 +127,21 @@ test.describe('superadmin', () => {
     });
 });
 
-test.describe('editor', () => {
-    test.use({ storageState: storageState.editor });
-
-    for (const route of adminRoutes) {
-        test(`boleh membuka ${route.name}`, async ({ page }) => {
-            const response = await page.goto(route.path);
-
-            expect(response?.status()).toBe(200);
-        });
-    }
-
-    for (const route of superadminRoutes) {
-        test(`ditolak 403 di ${route.name} (${route.path})`, async ({
-            request,
-        }) => {
-            const response = await request.get(route.path, {
-                maxRedirects: 0,
-                failOnStatusCode: false,
-            });
-
-            // 403, not 302: a redirect would mean the route merely hid itself,
-            // and FR5-15a asks for a refusal.
-            expect(response.status()).toBe(403);
-        });
-    }
-});
+/*
+ * There is no Editor block here any more.
+ *
+ * It was 20 tests: 14 asserting an Editor gets 200 on the shared routes, and 6
+ * asserting a 403 on the Superadmin-only ones. Every one of them is a statement
+ * about a response status, and every one is already made — against the same
+ * routes, with the same two roles — by tests/Feature/Admin/AdminAccessTest.php
+ * and its siblings, which run in the `ci` job in milliseconds rather than
+ * needing a browser, a login and a page load each.
+ *
+ * FR5-2 / FR5-15a are therefore still covered, and still covered server-side,
+ * which is the only place the requirement can actually be met. If that Pest
+ * coverage is ever removed, this block has to come back — the requirement says
+ * an Editor must be refused, not that the button must be hidden. Restoring it
+ * takes three things, not one: the block itself, an `editor` entry in
+ * `credentials` and `storageState` in ../routes.ts, and a second `setup()` in
+ * ../auth.setup.ts to sign that session in.
+ */

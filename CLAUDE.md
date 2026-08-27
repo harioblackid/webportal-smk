@@ -34,6 +34,8 @@ npm run types:check   # tsc --noEmit
 npm run build         # vite build
 npm run build:ssr     # vite build + SSR build (entrypoint: resources/js/ssr.tsx)
 npm run test:e2e      # Playwright, all browsers except the perf project
+npm run test:e2e:ci   # what CI runs — the seo project, plus smoke on Chrome and Safari
+npm run test:e2e:db   # create/migrate/seed laravel_portal_e2e (run once, and after a migration)
 npm run test:e2e:perf # Core Web Vitals, run alone so timing means something
 npm run test:e2e:ui   # Playwright UI mode
 ```
@@ -137,35 +139,63 @@ port 13714. Turning it off took the suite from ~171s to ~13s.
 
 Two layers, because the full matrix does not pay for itself:
 
-- **`cross/`** runs on Chrome, Firefox, Safari (WebKit), Edge, plus Pixel 5 and iPhone 12. It hunts
-  rendering and hydration faults — the things that actually differ between engines. `smoke.spec.ts`
+- **`cross/`** runs **one project per rendering engine** — Chrome (Blink), Firefox (Gecko), Safari
+  (WebKit) — plus iPhone 12 for touch. Edge and Pixel 5 were removed: both are Blink, so neither
+  could fail without `chromium` failing too, and `responsive.spec` overrides the device viewport
+  anyway. It hunts rendering and hydration faults — the things that actually differ between engines.
+  `smoke.spec.ts`
   fails on any console error, uncaught exception, or failed same-origin request; `responsive.spec.ts`
   asserts zero horizontal overflow at 360/768/1280 and exercises the mobile menu and theme toggle;
-  `seo.spec.ts` asserts on **raw HTML via `request.get()`**, because a browser context cannot tell
-  SSR from CSR — after hydration the DOM is identical either way.
+  `seo.spec.ts` asserts on **raw HTML via `request.get()`**. It is its own project (`seo`) with no
+  device at all, because it never opens a page — which is what lets it run with zero browsers
+  installed, and stops 25 byte-identical assertions being repeated once per engine.
 - **`deep/`** runs on Chromium only: admin CRUD and the Core Web Vitals probes are not
   engine-specific, and the performance APIs exist nowhere else.
 
-`npm run test:e2e` runs everything except the perf project; `npm run test:e2e:perf` runs that one
-alone with a single worker, because timing sampled while five browsers compete measures the machine,
-not the page.
+### The suite runs against its own database and its own port
+
+`playwright.config.ts` starts both servers itself (`reuseExistingServer: false`) and hands them
+`DB_DATABASE=laravel_portal_e2e` and `APP_URL` matching `baseURL`, on port **8123**. None of that is
+tidiness:
+
+- Reusing whatever was already listening meant a run with `composer dev` up tested the Vite dev
+  bundle — React in development mode, whose hydration warnings smoke.spec reports as failures —
+  while CI tested the production build.
+- `admin.spec` creates a Post and deletes it, and `Post` soft-deletes, so on `laravel_portal` the
+  row stays in the table forever and the listing paginates differently on the next run.
+- With `APP_URL` pointing somewhere else, every image carries a foreign origin and smoke.spec's
+  `isSameOrigin()` filter discards its failures — the assertion is only alive when the two agree.
+
+Run `npm run test:e2e:db` once to build that database, and again after any migration. It refuses a
+name not ending in `_e2e`, because it runs `migrate:fresh`.
+
+`npm run test:e2e` runs everything except perf; `npm run test:e2e:perf` runs that one alone with a
+single worker, because timing sampled while five browsers compete measures the machine, not the page.
+
+### CI runs a subset; the full matrix is local
+
+`npm run test:e2e:ci` — the `seo` project plus smoke on Chrome and Safari, 57 tests, ~45s. That is
+what `.github/workflows/tests.yml` runs, and the split is deliberate:
+
+- **seo.spec proves SSR happened (FR6-1) but is blind to what follows.** A page can render perfectly
+  on the server, pass all 25 assertions, and still throw during hydration and leave the visitor a
+  white screen. smoke.spec's `pageerror` / `console` listeners are the only guard against that, so
+  they belong in CI rather than on a laptop.
+- **The admin walk does not.** What survives is 23 tests covering what only a browser sees: each
+  page rendering without throwing, TipTap accepting input, the FR5-11 confirm dialog. The Editor
+  block that used to sit beside it is gone entirely — its 20 assertions about response status,
+  FR5-2 / FR5-15a included, are made by `tests/Feature/Admin/AdminAccessTest.php` and its siblings
+  in about a seventieth of the time.
+- responsive.spec, Firefox and mobile-safari stay local. So does perf.
 
 Since the content-dependent specs skip themselves on an empty database, both halves of that
-behaviour need exercising. A scratch database gives the CI shape without touching the dev data —
-the SSR process only renders the props it is handed, so it can be reused across databases:
+behaviour need exercising. `laravel_portal_e2e` has no berita, so it reproduces the CI shape by
+default; point `E2E_DB` at a database that *has* content to exercise the other half. A spec that
+*passes* on the empty one rather than skipping is the signal to check: it usually means the locator
+is matching page chrome (a sidebar avatar, a bundled logo) instead of the content it claims to
+assert on.
 
-```bash
-php -r "(new PDO('mysql:host=127.0.0.1','root',''))->exec('CREATE DATABASE IF NOT EXISTS laravel_portal_e2e');"
-DB_DATABASE=laravel_portal_e2e php artisan migrate --force
-DB_DATABASE=laravel_portal_e2e php artisan db:seed --force
-DB_DATABASE=laravel_portal_e2e E2E_PORT=8123 npx playwright test --grep-invert @perf
-```
-
-A spec that *passes* there rather than skipping is the signal to check: it usually means the
-locator is matching page chrome (a sidebar avatar, a bundled logo) instead of the content it
-claims to assert on.
-
-Two gotchas worth knowing:
+Gotchas worth knowing:
 
 - Workers are capped at 2, and the test budget is 90s. `php artisan serve` is PHP's built-in server
   and handles **one request at a time** (`PHP_CLI_SERVER_WORKERS` is Unix-only), so an unbounded
@@ -182,8 +212,8 @@ Two gotchas worth knowing:
   happened to expire on. The same applies in reverse to `page.reload()`: the appearance class is
   printed on `<html>` by blade, so `domcontentloaded` is the honest wait and `load` just measures
   the asset queue.
-- **On the mobile projects, touch behaviour needs `tap()` — `click()` is a mouse.** Playwright
-  dispatches real mouse events for `click()` even where `hasTouch` is set, so a Pixel 5 or iPhone 12
+- **On `mobile-safari`, touch behaviour needs `tap()` — `click()` is a mouse.** Playwright
+  dispatches real mouse events for `click()` even where `hasTouch` is set, so an iPhone 12
   page reports `pointerType: 'mouse'` exactly as a desktop one does. The public header opens its
   dropdowns on hover for mouse users only (the `pointerType` guard in `header.tsx`), so a `click()`
   there walks the hover path *and* the click path in one gesture — a journey no phone user can make,
@@ -191,7 +221,9 @@ Two gotchas worth knowing:
   without `hasTouch`, so it belongs inside the `navigasi mobile` block and nowhere else.
 - A stale `public/hot`, left behind when `npm run dev` is killed, makes `Vite::isRunningHot()` true.
   Inertia then posts pages to the Vite hot endpoint instead of the SSR port, nothing answers, and
-  **every public page silently degrades to CSR while looking perfectly healthy**. Delete the file.
+  **every public page silently degrades to CSR while looking perfectly healthy**. Every `test:e2e*`
+  script now deletes it first (`scripts/e2e-clean-hot.mjs`), but it will still bite anything that
+  invokes `npx playwright test` directly.
 
 ### No content fixture
 

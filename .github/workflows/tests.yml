@@ -63,11 +63,32 @@ jobs:
         run: composer ci:check
 
   e2e:
+    # The name is load-bearing: deploy.yml looks up a check-run called
+    # "browser tests" to decide whether to warn before releasing. Renaming this
+    # job makes that lookup report "missing" on every release, forever, and a
+    # warning that always fires is a warning nobody reads.
     name: browser tests
     runs-on: ubuntu-latest
 
     # Kept out of the `ci` job on purpose: lint and unit failures should come
     # back in a couple of minutes, not behind a browser matrix.
+    #
+    # Scope is deliberately narrow (`npm run test:e2e:ci`): the SEO suite, plus
+    # smoke on Chrome and Safari. The rest — Firefox, the touch device, the
+    # responsive sweep and the admin CRUD walk — runs locally.
+    #
+    # What that keeps is what only a real engine can see. seo.spec reads the HTML
+    # the server sent, so it can prove SSR happened (FR6-1) but is blind to what
+    # follows: a page can render perfectly on the server, pass all 25 SEO
+    # assertions, and still throw during hydration and leave every visitor a
+    # white screen. smoke.spec's `pageerror` and `console` listeners are the only
+    # guard against that, which is why they are here and not left to a laptop.
+    #
+    # What it drops is what is covered more cheaply elsewhere. The admin walk is
+    # 23 browser tests, and the Editor block that used to sit beside it is gone
+    # altogether: its 20 assertions about response status — the FR5-2 / FR5-15a
+    # 403 split included — are made by the 297 Pest tests in the `ci` job above,
+    # in about a seventieth of the time.
     services:
       mariadb:
         image: mariadb:11
@@ -100,9 +121,10 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.3'
-          # gd is not optional here: ImageProcessor runs every upload through
-          # it, so the admin media specs fail without it.
-          extensions: pdo_mysql, gd
+          # gd was here for the admin media specs, which push every upload
+          # through ImageProcessor. Those run locally now, and no seeder touches
+          # an image, so nothing in this job needs it.
+          extensions: pdo_mysql
           tools: composer:v2
           coverage: none
 
@@ -125,10 +147,10 @@ jobs:
         run: npm run build:ssr
 
       # Accounts, jurusan, ekstrakurikuler, the identity record, and the site
-      # settings — the same seeders a release runs. Required, not optional:
-      # tests/e2e/auth.setup.ts signs in with the credentials DatabaseSeeder
-      # creates, so without this every admin spec fails at login rather than on
-      # anything it means to test.
+      # settings — the same seeders a release runs. Still required now that the
+      # admin specs (and the logins they needed) have left this job: seo.spec
+      # asserts the sitemap advertises `/jurusan/`, and jurusan come from
+      # SchoolContentSeeder.
       #
       # There is no content fixture. Specs that need berita, media, or a hero
       # detect the empty database and skip themselves (see tests/e2e/routes.ts).
@@ -145,20 +167,16 @@ jobs:
       - name: Install Playwright browsers
         # .npmrc sets ignore-scripts=true, so the postinstall download never
         # runs — the browsers have to be fetched explicitly.
-        run: npx playwright install --with-deps chromium firefox webkit msedge
+        #
+        # Two engines, not four. The `seo` project needs none at all (it asserts
+        # on raw HTML through the `request` fixture, never opening a page), and
+        # smoke runs on Chrome and Safari — WebKit being the engine that has
+        # actually produced faults here, and the one no Windows developer can
+        # reach without Playwright.
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run browser tests
-        run: npm run test:e2e
-
-      - name: Measure Core Web Vitals
-        # Separate step so timing is not sampled while the matrix above is
-        # still competing for the runner's CPU.
-        #
-        # Expect these to report as skipped on CI: the Core Web Vitals probes
-        # need photos to have an LCP candidate at all, and there is no content
-        # fixture any more. US-021 / FR6-16 is verified by hand (Lighthouse)
-        # against a database that has real content.
-        run: npm run test:e2e:perf
+        run: npm run test:e2e:ci
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}

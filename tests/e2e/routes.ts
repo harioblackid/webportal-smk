@@ -100,16 +100,20 @@ export const superadminRoutes: Route[] = [
     { path: '/admin/users/create', name: 'buat pengguna' },
 ];
 
-/** Must match the constants in database/seeders/DatabaseSeeder.php. */
+/**
+ * Must match the constants in database/seeders/DatabaseSeeder.php.
+ *
+ * Superadmin only: the Editor account is still seeded and still exercised, but
+ * by tests/Feature/Admin/AdminAccessTest.php, which builds its own users and
+ * never signs in through a browser.
+ */
 export const credentials = {
     superadmin: { email: 'admin@smk.com', password: 'adminsmk99' },
-    editor: { email: 'editor@smk.com', password: 'adminsmk99' },
 };
 
 /** Where auth.setup.ts parks the signed-in browser state. */
 export const storageState = {
     superadmin: 'tests/e2e/.auth/superadmin.json',
-    editor: 'tests/e2e/.auth/editor.json',
 };
 
 /*
