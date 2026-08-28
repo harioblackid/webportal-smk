@@ -74,6 +74,46 @@ test('every public page carries the organisation node', function () {
         );
 });
 
+test('the postal address carries the locality and postcode, not just the street', function () {
+    // FR6-13. Production published only `alamat`, so the JSON-LD gave Google a
+    // street with no town to place it in — and the visible address read
+    // "Jl. Syech Quro No. 103," with the joining comma left dangling.
+    SchoolIdentity::put('alamat', 'Jl. Syech Quro No. 103,');
+    SchoolIdentity::put('desa_kelurahan', 'Talagasari');
+    SchoolIdentity::put('kecamatan', 'Telagasari');
+    SchoolIdentity::put('kabupaten_kota', 'Karawang');
+    SchoolIdentity::put('kode_pos', '41381');
+
+    $this->get(route('kontak'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where(
+                'site.contact.address',
+                'Jl. Syech Quro No. 103, Desa Talagasari, Kec. Telagasari, Karawang 41381',
+            )
+            ->where(
+                'site.organization.address.streetAddress',
+                'Jl. Syech Quro No. 103, Desa Talagasari, Kec. Telagasari',
+            )
+            ->where('site.organization.address.addressLocality', 'Karawang')
+            ->where('site.organization.address.postalCode', '41381')
+            ->where('site.organization.address.addressCountry', 'ID')
+        );
+});
+
+test('an address with nothing but a street still renders', function () {
+    // Only `alamat` is required, so the other fields being blank is a normal
+    // state rather than a half-filled one.
+    SchoolIdentity::put('alamat', 'Jalan Raya Telagasari');
+
+    $this->get(route('kontak'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('site.contact.address', 'Jalan Raya Telagasari')
+            ->where('site.organization.address.streetAddress', 'Jalan Raya Telagasari')
+            ->missing('site.organization.address.addressLocality')
+            ->missing('site.organization.address.postalCode')
+        );
+});
+
 test('a contact detail the school has not set is left out of the json-ld', function () {
     // An empty schema.org property is worse than an absent one.
     $this->get(route('home'))

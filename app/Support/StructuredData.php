@@ -19,9 +19,10 @@ class StructuredData
      * page prints.
      *
      * @param  array<string, mixed>  $site
+     * @param  array{street: string, locality: ?string, postalCode: ?string, line: string}|null  $address
      * @return array<string, mixed>
      */
-    public static function organization(array $site): array
+    public static function organization(array $site, ?array $address = null): array
     {
         /** @var array{address: ?string, phone: ?string, email: ?string} $contact */
         $contact = $site['contact'];
@@ -37,11 +38,16 @@ class StructuredData
             'description' => $site['tagline'],
             'telephone' => $contact['phone'],
             'email' => $contact['email'],
-            'address' => $contact['address'] === null ? null : [
+            // Split across the schema.org fields rather than crammed into
+            // streetAddress: without addressLocality and postalCode Google has
+            // nothing to place the school by.
+            'address' => $address === null ? null : array_filter([
                 '@type' => 'PostalAddress',
-                'streetAddress' => $contact['address'],
+                'streetAddress' => $address['street'],
+                'addressLocality' => $address['locality'],
+                'postalCode' => $address['postalCode'],
                 'addressCountry' => 'ID',
-            ],
+            ], fn ($value) => $value !== null),
         ], fn ($value) => $value !== null);
     }
 

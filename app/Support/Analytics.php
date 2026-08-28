@@ -14,9 +14,25 @@ use Illuminate\Support\Facades\Request;
  */
 class Analytics
 {
+    /**
+     * The paths that are neither indexed nor measured.
+     *
+     * SitemapController::robots() disallows exactly this list, so a page
+     * cannot end up out of the index but still counted as visitor traffic —
+     * which is what was happening on /login.
+     *
+     * @var list<string>
+     */
+    public const PRIVATE_PATHS = [
+        'admin',
+        'login',
+        'forgot-password',
+        'reset-password',
+    ];
+
     public static function measurementId(): ?string
     {
-        if (Request::is('admin', 'admin/*')) {
+        if (Request::is(...self::patterns())) {
             return null;
         }
 
@@ -25,5 +41,22 @@ class Analytics
         // The tag only ever accepts G-XXXXXXX; refusing anything else means a
         // fat-fingered value cannot inject markup into every public page.
         return preg_match('/^G-[A-Z0-9]{4,20}$/', $id) === 1 ? $id : null;
+    }
+
+    /**
+     * Each private path plus everything under it.
+     *
+     * @return list<string>
+     */
+    private static function patterns(): array
+    {
+        $patterns = [];
+
+        foreach (self::PRIVATE_PATHS as $path) {
+            $patterns[] = $path;
+            $patterns[] = $path.'/*';
+        }
+
+        return $patterns;
     }
 }

@@ -231,6 +231,62 @@ class SchoolIdentityFields
     }
 
     /**
+     * The location fields assembled into one postal address (FR6-13).
+     *
+     * `alamat` on its own is only the street. Desa, kecamatan, kabupaten, and
+     * kode pos each live in their own field, so anything printing `alamat` raw
+     * shows a fragment — in production that was a bare
+     * "Jl. Syech Quro No. 103," in the header, the footer, and the JSON-LD,
+     * with no locality for Google to place the school by.
+     *
+     * @return array{street: string, locality: ?string, postalCode: ?string, line: string}|null
+     */
+    public static function address(): ?array
+    {
+        $values = self::all();
+        $street = self::tidy($values['alamat'] ?? null);
+
+        if ($street === null) {
+            return null;
+        }
+
+        $desa = self::tidy($values['desa_kelurahan'] ?? null);
+        $kecamatan = self::tidy($values['kecamatan'] ?? null);
+        $locality = self::tidy($values['kabupaten_kota'] ?? null);
+        $postalCode = self::tidy($values['kode_pos'] ?? null);
+
+        // schema.org keeps the locality and the postcode in fields of their
+        // own, so the street stops at the kecamatan.
+        $street = implode(', ', array_filter([
+            $street,
+            $desa === null ? null : 'Desa '.$desa,
+            $kecamatan === null ? null : 'Kec. '.$kecamatan,
+        ]));
+
+        $line = implode(', ', array_filter([$street, $locality]));
+
+        return [
+            'street' => $street,
+            'locality' => $locality,
+            'postalCode' => $postalCode,
+            'line' => $postalCode === null ? $line : $line.' '.$postalCode,
+        ];
+    }
+
+    /**
+     * A stored value with its whitespace and any trailing separator removed.
+     *
+     * The Dapodik record is typed by hand, and a field copied out of a longer
+     * address arrives with the comma that used to join it still attached.
+     */
+    private static function tidy(?string $value): ?string
+    {
+        $value = trim((string) $value, " \t\n\r\0\x0B,;.-");
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
      * Lintang/bujur as floats, or null when either is missing or not a number.
      *
      * @return array{lat: float, lng: float}|null

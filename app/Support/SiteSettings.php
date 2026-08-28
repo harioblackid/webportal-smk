@@ -30,6 +30,7 @@ class SiteSettings
         // record — not in site settings, so the two can never disagree.
         $identity = SchoolIdentityFields::all();
 
+        $address = SchoolIdentityFields::address();
         $phone = $identity['nomor_telepon'] ?? null;
         $whatsapp = self::clean($values->get('contact_whatsapp'));
         $ppdbUrl = self::clean($values->get('ppdb_url'));
@@ -46,7 +47,9 @@ class SiteSettings
             // FR6-19: what a share falls back to when a page has no image.
             'ogImage' => $base.'/og-default.png',
             'contact' => [
-                'address' => $identity['alamat'] ?? null,
+                // The whole address, not just `alamat` — see
+                // SchoolIdentityFields::address().
+                'address' => $address['line'] ?? null,
                 'phone' => $phone,
                 'phoneHref' => $phone === null ? null : 'tel:'.self::digits($phone),
                 'whatsapp' => $whatsapp,
@@ -73,7 +76,7 @@ class SiteSettings
 
         // FR6-11: built here so the JSON-LD and the visible contact block can
         // never drift apart — both read the same array.
-        $site['organization'] = StructuredData::organization($site);
+        $site['organization'] = StructuredData::organization($site, $address);
 
         return $site;
     }
@@ -124,10 +127,11 @@ class SiteSettings
      * record rather than from a second copy here, so the map and the published
      * coordinates can never disagree.
      *
-     * In `link` mode the setting may hold either a bare URL or the whole
-     * `<iframe>` snippet Google hands out. Only the src is kept — pasted markup
-     * is never injected into the page, so a bad paste cannot become script on
-     * the public site.
+     * In `link` mode the setting may hold a bare URL or the whole `<iframe>`
+     * snippet Google hands out, and MapsEmbed rewrites a share link into the
+     * embeddable form. Normalising on read rather than on save is deliberate:
+     * a link already stored before that rule existed starts working again on
+     * the next request, without anyone re-saving the settings form.
      */
     public static function mapsEmbedUrl(): ?string
     {
@@ -138,22 +142,13 @@ class SiteSettings
                 return null;
             }
 
-            return 'https://maps.google.com/maps?q='
-                .$point['lat'].','.$point['lng']
-                .'&hl=id&z=16&output=embed';
+            return MapsEmbed::fromCoordinates(
+                (string) $point['lat'],
+                (string) $point['lng'],
+            );
         }
 
-        $value = self::clean(Setting::get('maps_embed'));
-
-        if ($value === null) {
-            return null;
-        }
-
-        if (preg_match('/src\s*=\s*["\']([^"\']+)["\']/i', $value, $matches) === 1) {
-            $value = $matches[1];
-        }
-
-        return str_starts_with($value, 'https://') ? $value : null;
+        return MapsEmbed::normalize(self::clean(Setting::get('maps_embed')));
     }
 
     private static function clean(?string $value): ?string

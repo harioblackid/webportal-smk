@@ -16,7 +16,8 @@ declare module '@inertiajs/core' {
             site: Site;
             auth: Auth;
             flash: Flash;
-            sidebarOpen: boolean;
+            /** Admin requests only — the public pages have no sidebar. */
+            sidebarOpen?: boolean;
             [key: string]: unknown;
         };
     }

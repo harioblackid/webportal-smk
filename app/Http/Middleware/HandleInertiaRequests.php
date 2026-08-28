@@ -52,8 +52,14 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             // The admin sidebar remembers whether it was collapsed; the starter
-            // kit's <SidebarProvider> reads this as its defaultOpen.
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // kit's <SidebarProvider> reads this as its defaultOpen. Shared
+            // only where that shell renders — the public pages have no sidebar,
+            // and an admin-only prop on every visitor's payload is one more
+            // thing that has to stay true of both design systems.
+            ...($request->is('admin', 'admin/*') ? [
+                'sidebarOpen' => ! $request->hasCookie('sidebar_state')
+                    || $request->cookie('sidebar_state') === 'true',
+            ] : []),
         ];
     }
 }

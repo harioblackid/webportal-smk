@@ -17,5 +17,10 @@ export function AppShell({ children, variant = 'sidebar' }: Props) {
         );
     }
 
-    return <SidebarProvider defaultOpen={isOpen}>{children}</SidebarProvider>;
+    // Expanded unless a cookie says otherwise, matching the server default.
+    return (
+        <SidebarProvider defaultOpen={isOpen ?? true}>
+            {children}
+        </SidebarProvider>
+    );
 }

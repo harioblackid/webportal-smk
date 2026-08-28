@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\GalleryAlbum;
 use App\Models\Major;
 use App\Models\Post;
+use App\Support\Analytics;
 use App\Support\PageVisibility;
 use App\Support\SiteSettings;
 use Illuminate\Http\Response;
@@ -94,12 +95,14 @@ class SitemapController extends Controller
      */
     public function robots(): Response
     {
+        $disallow = array_map(
+            fn (string $path): string => 'Disallow: /'.$path,
+            Analytics::PRIVATE_PATHS,
+        );
+
         $body = implode("\n", [
             'User-agent: *',
-            'Disallow: /admin',
-            'Disallow: /login',
-            'Disallow: /forgot-password',
-            'Disallow: /reset-password',
+            ...$disallow,
             'Allow: /',
             '',
             'Sitemap: '.self::base().'/sitemap.xml',

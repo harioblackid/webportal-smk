@@ -2,6 +2,7 @@
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Analytics;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -104,8 +105,65 @@ test('the ga4 tag is not loaded inside the admin area', function () {
         ->assertDontSee('googletagmanager.com', false);
 });
 
+test('the ga4 tag is not loaded on the auth screens either', function (string $url) {
+    // robots.txt disallows these, so counting them as visitor traffic reports
+    // arrivals Search Console will never corroborate.
+    Setting::put('ga4_measurement_id', 'G-ABC1234567');
+
+    get($url)->assertOk()->assertDontSee('googletagmanager.com', false);
+})->with([
+    'login' => fn () => route('login'),
+    'forgot password' => fn () => route('password.request'),
+]);
+
+test('robots disallows exactly the paths analytics skips', function () {
+    // One list, so a page cannot fall out of the index yet stay in the stats.
+    $robots = get('/robots.txt')->assertOk()->getContent();
+
+    foreach (Analytics::PRIVATE_PATHS as $path) {
+        expect($robots)->toContain('Disallow: /'.$path);
+    }
+
+    expect(substr_count((string) $robots, 'Disallow:'))
+        ->toBe(count(Analytics::PRIVATE_PATHS));
+});
+
 test('no analytics script is emitted when no id is configured', function () {
     get(route('home'))->assertDontSee('googletagmanager.com', false);
+});
+
+test('a map link that cannot be framed is refused at the form', function () {
+    // The failure it prevents is silent: a share URL saved fine, then Google
+    // answered X-Frame-Options and the Kontak page showed an empty box.
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload([
+            'maps_embed' => 'https://maps.app.goo.gl/abc123',
+        ]))
+        ->assertSessionHasErrors('maps_embed');
+});
+
+test('a share link is accepted and reaches the page in embeddable form', function () {
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload([
+            'maps_embed' => 'https://www.google.com/maps/place/Sekolah/@-6.28,107.40,17z/data=!3d-6.2897689!4d107.3909987',
+        ]))
+        ->assertSessionHasNoErrors();
+
+    get(route('kontak'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where(
+            'mapsEmbedUrl',
+            'https://maps.google.com/maps?q=-6.2897689,107.3909987&hl=id&z=16&output=embed',
+        ));
+});
+
+test('coordinate mode does not fail on a link field it never reads', function () {
+    // Failing it there would block the save over a value nobody can see.
+    actingAs(User::factory()->superadmin()->create())
+        ->put(route('admin.settings.update'), settingPayload([
+            'maps_mode' => 'coordinates',
+            'maps_embed' => 'https://maps.app.goo.gl/abc123',
+        ]))
+        ->assertSessionHasNoErrors();
 });
 
 test('a malformed measurement id is rejected', function () {

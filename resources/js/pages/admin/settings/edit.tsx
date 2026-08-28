@@ -201,8 +201,12 @@ export default function SettingsEdit({
                                 }
                             />
                             <p className="text-sm text-muted-foreground">
-                                Tempel URL embed atau seluruh kode iframe dari
-                                Google Maps — hanya alamat petanya yang dipakai.
+                                Tempel URL embed atau seluruh kode iframe dari{' '}
+                                <strong>Bagikan › Sematkan peta</strong> — hanya
+                                alamat petanya yang dipakai. Tautan biasa dari{' '}
+                                <strong>Bagikan › Salin link</strong> juga
+                                diterima selama memuat koordinat; tautan pendek{' '}
+                                <code>maps.app.goo.gl</code> tidak bisa dipakai.
                             </p>
                         </Field>
                     )}
