@@ -123,3 +123,38 @@ test.describe('indeksabilitas', () => {
         expect(response.headers()['x-robots-tag']).toContain('noindex');
     });
 });
+
+/**
+ * The icons live in public/ and are referenced by a fixed path, so nothing in
+ * the build would fail if one went missing — the only symptom is a blank tab.
+ *
+ * These assert the file is reachable AND is an image: a missing file under
+ * Laravel returns the 404 page, which is a 200-shaped HTML document to
+ * anything that only checks that a request came back.
+ */
+test.describe('ikon situs', () => {
+    const icons = ['/favicon.ico', '/apple-touch-icon.png', '/og-default.png'];
+
+    for (const path of icons) {
+        test(`${path} tersaji sebagai gambar`, async ({ request }) => {
+            const response = await request.get(path);
+
+            expect(response.status()).toBe(200);
+            expect(response.headers()['content-type']).toMatch(/^image\//);
+            // A Laravel error page would still be "200 with a body".
+            expect(
+                (await response.body()).byteLength,
+                `${path} kosong`,
+            ).toBeGreaterThan(0);
+        });
+    }
+
+    test('beranda menautkan favicon dan apple-touch-icon', async ({
+        request,
+    }) => {
+        const html = await (await request.get('/')).text();
+
+        expect(html).toMatch(/rel=["']?icon/);
+        expect(html).toMatch(/rel=["']?apple-touch-icon/);
+    });
+});

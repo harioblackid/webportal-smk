@@ -95,6 +95,25 @@ test('the ga4 tag is rendered on public pages once the id is set', function () {
         ->assertSee('googletagmanager.com/gtag/js?id=G-ABC1234567', false);
 });
 
+test('the ga4 tag is injected after paint, not render-blocking in the head', function () {
+    // Measured at 673ms of main-thread time on a throttled mobile trace, on a
+    // page whose LCP element is text and whose render delay is 1,223ms. The
+    // dataLayer shim stays eager so the queued js/config calls keep their real
+    // timestamps; only the script fetch moves.
+    Setting::put('ga4_measurement_id', 'G-ABC1234567');
+
+    $html = get(route('home'))->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('googletagmanager.com/gtag/js?id=G-ABC1234567')
+        // The eager <script async src> is what must be gone.
+        ->not->toMatch('/<script[^>]+src=["\']https:\/\/www\.googletagmanager\.com/')
+        ->toContain('requestIdleCallback')
+        // gtag() must still queue before the script arrives, or the page_view
+        // is lost rather than deferred.
+        ->toContain('window.dataLayer = window.dataLayer || []');
+});
+
 test('the ga4 tag is not loaded inside the admin area', function () {
     // FR5-5 keeps /admin out of the index, and staff editing is not traffic.
     Setting::put('ga4_measurement_id', 'G-ABC1234567');

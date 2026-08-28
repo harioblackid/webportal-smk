@@ -8,6 +8,7 @@ import {
     notFoundRoutes,
     publicRoutes,
 } from '../routes';
+import { throttle } from '../throttle';
 
 /**
  * "Tidak ada element yang error pada lintas browser."
@@ -17,6 +18,23 @@ import {
  * parse in WebKit, or an image that 404s. Those only surface in a real engine,
  * which is the entire reason this file exists.
  */
+
+/**
+ * The one project that runs this file on a throttled browser. Everything else
+ * runs it at full speed, so the check is a project-name comparison rather than
+ * a fixture — the spec itself is identical in both, and that is the point:
+ * a fault the slow run finds is a fault the fast run has always been able to
+ * report and simply never provoked.
+ */
+const SLOW_PROJECT = 'smoke-slow';
+
+test.beforeEach(async ({ page }, testInfo) => {
+    if (testInfo.project.name !== SLOW_PROJECT) {
+        return;
+    }
+
+    await throttle(page);
+});
 
 type PageFaults = {
     console: string[];

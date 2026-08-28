@@ -174,6 +174,36 @@ jobs:
             exit 1
           fi
 
+          # An HTML-rewriting optimizer in front of nginx (mod_pagespeed and the
+          # like) republishes our assets under URLs of its own, and those expire
+          # while HTML still referencing them is in a browser cache. Observed in
+          # production on 2026-08-28: the stylesheet and apple-touch-icon URLs
+          # served an hour earlier had both become 404. A visitor holding that
+          # HTML gets an unstyled page. The rewriting is intermittent, so this
+          # only catches it some of the time — but it cannot be caught at all by
+          # tests/e2e, which run against a local server with no such layer.
+          if printf '%s' "${body}" | grep -q '\.pagespeed\.'; then
+            echo "::error::Homepage HTML contains .pagespeed. URLs — an optimizer is rewriting our output. See docs/deployment.md §7."
+            exit 1
+          fi
+
+          # The icons are referenced by fixed paths, so nothing else fails when
+          # one stops being published; the tab just goes blank.
+          for icon in favicon.ico apple-touch-icon.png og-default.png; do
+            type="$(curl --fail --silent --show-error --location --retry 2 \
+              --output /dev/null --write-out '%{content_type}' "${APP_URL}/${icon}")" || {
+              echo "::error::${APP_URL}/${icon} is not reachable."
+              exit 1
+            }
+
+            case "${type}" in
+              image/*) ;;
+              *)
+                echo "::error::${APP_URL}/${icon} returned '${type}', not an image — it is probably the 404 page."
+                exit 1 ;;
+            esac
+          done
+
           echo "Release verified at ${APP_URL}"
 
       - name: Clean up SSH key

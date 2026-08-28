@@ -163,6 +163,32 @@ export default defineConfig({
             testMatch: /cross\/(smoke|responsive)\.spec\.ts/,
         },
 
+        /*
+         * The same smoke.spec, on a Chromium throttled to 4x CPU slowdown and
+         * Slow 4G (see tests/e2e/throttle.ts).
+         *
+         * This is not a duplicate Blink project of the kind the Edge and
+         * Pixel 5 removals above got rid of. Those ran the same assertions
+         * under the same conditions as `chromium` and so could not fail
+         * independently. This one changes the condition, and that condition is
+         * the only one under which a hydration race shows up at all: production
+         * threw React #418 twice under mobile emulation at 4-6x slowdown during
+         * the 2026-08-28 audit, and never once at full speed.
+         *
+         * A mobile device profile, unlike the removed Pixel 5, is meaningful
+         * here: smoke.spec never calls `setViewportSize()`, so the device's
+         * viewport survives — it was responsive.spec that overrode it.
+         *
+         * Its budget is separate because throttling multiplies every wait, and
+         * a test that runs out of time looks exactly like the fault it hunts.
+         */
+        {
+            name: 'smoke-slow',
+            use: { ...devices['Pixel 5'] },
+            testMatch: /cross\/smoke\.spec\.ts/,
+            timeout: 180_000,
+        },
+
         // Deep layer — Chromium only.
         {
             name: 'admin',

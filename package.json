@@ -8,7 +8,7 @@
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",
         "test:e2e": "node scripts/e2e-clean-hot.mjs && playwright test --grep-invert @perf",
-        "test:e2e:ci": "node scripts/e2e-clean-hot.mjs && playwright test --project=seo --project=chromium --project=webkit tests/e2e/cross/seo.spec.ts tests/e2e/cross/smoke.spec.ts",
+        "test:e2e:ci": "node scripts/e2e-clean-hot.mjs && playwright test --project=seo --project=chromium --project=webkit --project=smoke-slow tests/e2e/cross/seo.spec.ts tests/e2e/cross/smoke.spec.ts",
         "test:e2e:db": "node scripts/e2e-db.mjs",
         "test:e2e:ui": "playwright test --ui",
         "test:e2e:report": "playwright show-report",
@@ -17,7 +17,8 @@
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
         "types:check": "tsc --noEmit",
-        "test:e2e:perf": "node scripts/e2e-clean-hot.mjs && playwright test --project=perf --workers=1"
+        "test:e2e:perf": "node scripts/e2e-clean-hot.mjs && playwright test --project=perf --workers=1",
+        "test:e2e:slow": "node scripts/e2e-clean-hot.mjs && playwright test --project=smoke-slow"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",

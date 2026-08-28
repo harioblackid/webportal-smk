@@ -37,14 +37,48 @@
         @endif
 
         {{-- FR5-18 / US-015: GA4 loads only when a Superadmin has entered a
-             Measurement ID, and App\Support\Analytics keeps it off /admin. --}}
+             Measurement ID, and App\Support\Analytics keeps it off /admin.
+
+             This is Google's own snippet with one change: gtag.js is injected
+             after the page is interactive instead of `async` in the head. It
+             was measured at 673ms of main-thread time on a throttled mobile
+             trace (2026-08-28), landing squarely in the LCP window on a page
+             whose LCP element is text and whose whole render delay is 1,223ms.
+
+             The measurement semantics are unchanged, which is the point of
+             keeping the shim inline and eager: `gtag()` only pushes onto
+             `dataLayer`, an ordinary array. The js/config calls below queue
+             there with their real timestamps and gtag.js replays the queue
+             when it finally arrives, so the page_view still fires and still
+             carries the right time. --}}
         @if ($ga4 = App\Support\Analytics::measurementId())
-            <script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga4 }}"></script>
             <script>
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
                 gtag('config', @json($ga4));
+
+                (function () {
+                    var load = function () {
+                        var tag = document.createElement('script');
+                        tag.async = true;
+                        tag.src = 'https://www.googletagmanager.com/gtag/js?id={{ $ga4 }}';
+                        document.head.appendChild(tag);
+                    };
+
+                    // requestIdleCallback where it exists; Safari still has no
+                    // support, so `load` is the floor everywhere else. Either
+                    // way the fetch starts after first paint, never before.
+                    if ('requestIdleCallback' in window) {
+                        window.requestIdleCallback(load, { timeout: 4000 });
+                    } else if (document.readyState === 'complete') {
+                        window.setTimeout(load, 1000);
+                    } else {
+                        window.addEventListener('load', function () {
+                            window.setTimeout(load, 1000);
+                        });
+                    }
+                })();
             </script>
         @endif
 
